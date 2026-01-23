@@ -1,0 +1,69 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PANU | Legal Empowerment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Martel:wght@400;700;900&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              serif: ['"Cormorant Garamond"', '"Martel"', 'serif'],
+              sans: ['Montserrat', 'sans-serif'],
+            },
+            colors: {
+              regal: {
+                50: '#fdfbf7',
+                100: '#f9f5ed',
+                200: '#f1e8d6',
+                300: '#e5d3b3',
+                400: '#d5b986',
+                500: '#c5a059',
+                600: '#b08b49',
+                700: '#91713c',
+                800: '#765c35',
+                900: '#614c2e',
+              },
+              heritage: {
+                dark: '#1a1a1a',
+                paper: '#fdfaf5',
+                navy: '#1B263B',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background-color: #fdfaf5;
+      }
+      .old-money-border {
+        border: 1px solid #c5a059;
+        box-shadow: 0 0 15px rgba(197, 160, 89, 0.1);
+      }
+      .parchment {
+        background: linear-gradient(to right, #fdfaf5, #f9f5ed, #fdfaf5);
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="font-sans text-heritage-dark selection:bg-regal-200">
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
