@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Language, translations } from '../translations';
+import { Language, translations } from '../../translations';
 
 interface AadhaarVerificationProps {
   onVerified: (aadhaar: string) => void;

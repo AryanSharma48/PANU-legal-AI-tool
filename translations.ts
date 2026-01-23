@@ -3,12 +3,12 @@ export type Language = 'en' | 'hi';
 
 export const translations = {
   en: {
-    navbar: { ethos: 'Our Ethos', jurisprudence: 'Jurisprudence', resources: 'Resources', securePortal: 'Drafting Portal', login: 'Login' },
+    navbar: { ethos: 'Our Ethos', jurisprudence: 'Jurisprudence', resources: 'Resources', securePortal: 'Drafting Portal', login: 'Login', logout: 'Logout' },
     landing: {
       title: 'Sovereign Justice',
       subtitle: 'for Every Citizen',
       description: 'PANU stands for the dignity of the common man. We offer a royal drafting experience for legal petitions—bridging the gap between the court and the marginalized, completely free of the predatory fees of advocates.',
-      beginBtn: 'Begin Your Recourse',
+      beginBtn: 'Begin Your Draft',
       feature1Title: 'I. Verification',
       feature1Text: 'Secure identity verification via Aadhaar API to ensure procedural integrity.',
       feature2Title: 'II. Jurisprudence',
@@ -68,6 +68,7 @@ export const translations = {
       login: {
         title: 'Registry Access',
         subtitle: 'Enter the Sovereign Vault',
+        googleBtn: 'Sign in with Google',
         username: 'Identifier',
         password: 'Passkey',
         submit: 'Enter Portal'
@@ -75,12 +76,12 @@ export const translations = {
     }
   },
   hi: {
-    navbar: { ethos: 'हमारा लोकाचार', jurisprudence: 'न्यायशास्त्र', resources: 'संसाधन', securePortal: 'मसौदा पोर्टल', login: 'लॉगिन' },
+    navbar: { ethos: 'हमारा लोकाचार', jurisprudence: 'न्यायशास्त्र', resources: 'संसाधन', securePortal: 'मसौदा पोर्टल', login: 'लॉगिन', logout: 'लॉगआउट' },
     landing: {
       title: 'संप्रभु न्याय',
       subtitle: 'हर नागरिक के लिए',
       description: 'PANU आम आदमी की गरिमा के लिए खड़ा है। हम कानूनी याचिकाओं के लिए एक शाही मसौदा अनुभव प्रदान करते हैं—अदालत और वंचितों के बीच की दूरी को पाटते हुए, अधिवक्ताओं की शोषणकारी फीस से पूरी तरह मुक्त।',
-      beginBtn: 'अपना उपचार शुरू करें',
+      beginBtn: 'अपना ड्राफ्ट शुरू करें',
       feature1Title: 'I. सत्यापन',
       feature1Text: 'प्रक्रियात्मक अखंडता सुनिश्चित करने के लिए आधार एपीआई के माध्यम से सुरक्षित पहचान सत्यापन।',
       feature2Title: 'II. न्यायशास्त्र',
@@ -140,6 +141,7 @@ export const translations = {
       login: {
         title: 'पंजीकरण पहुंच',
         subtitle: 'संप्रभु तिजोरी में प्रवेश करें',
+        googleBtn: 'गूगल के साथ साइन इन करें',
         username: 'पहचानकर्ता',
         password: 'पासकी',
         submit: 'पोर्टल में प्रवेश करें'

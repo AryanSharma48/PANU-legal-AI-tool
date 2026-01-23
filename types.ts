@@ -28,3 +28,10 @@ export interface LegalDraftResponse {
   formattedDraft: string;
   references: string[];
 }
+
+export interface User {
+  name: string;
+  email: string;
+  photo?: string;
+}
+

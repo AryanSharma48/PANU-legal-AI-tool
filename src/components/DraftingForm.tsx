@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { LegalDraftRequest } from '../types';
-import { Language, translations } from '../translations';
+import { LegalDraftRequest } from '../../types';
+import { Language, translations } from '../../translations';
 
 interface DraftingFormProps {
   onSubmit: (data: LegalDraftRequest) => void;
