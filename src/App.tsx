@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+// src/App.tsx
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import AadhaarVerification from './components/AadhaarVerification';
 import DraftingForm from './components/DraftingForm';
@@ -7,6 +7,10 @@ import PetitionViewer from './components/PetitionViewer';
 import { generateLegalDraft } from '../services/geminiService';
 import { LegalDraftRequest, User } from '../types';
 import { Language, translations } from '../translations';
+
+// --- FIREBASE IMPORTS ---
+import { auth, googleProvider } from './firebase'; 
+import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 
 type AppState = 'landing' | 'verifying' | 'drafting' | 'loading' | 'viewing' | 'ethos' | 'jurisprudence' | 'resources' | 'login';
 
@@ -19,27 +23,53 @@ const App: React.FC = () => {
 
   const t = translations[language];
 
+  // --- 1. AUTH STATE LISTENER ---
+  // This listens for changes (login/logout) automatically
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // Map Firebase data to your App's User type
+        setUser({
+          name: firebaseUser.displayName || "Citizen",
+          email: firebaseUser.email || "",
+          photo: firebaseUser.photoURL || undefined
+        });
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const handleVerified = (verifiedAadhaar: string) => {
     setAadhaar(verifiedAadhaar);
     setAppState('drafting');
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    setAppState('landing');
+  // --- 2. UPDATED LOGOUT ---
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      // State updates via onAuthStateChanged, but we reset app flow here
+      setAppState('landing');
+    } catch (error) {
+      console.error("Logout Error:", error);
+    }
   };
 
-  const handleGoogleLogin = () => {
+  // --- 3. UPDATED GOOGLE LOGIN ---
+  const handleGoogleLogin = async () => {
     setAppState('loading');
-    // Simulating a Google Auth delay and result
-    setTimeout(() => {
-      setUser({
-        name: "Aaryan Malhotra",
-        email: "aaryan.m@citizen.in",
-        photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aaryan"
-      });
-      setAppState('landing');
-    }, 1200);
+    try {
+      await signInWithPopup(auth, googleProvider);
+      // Login successful - The useEffect above will update the 'user' state
+      setAppState('landing'); 
+    } catch (error) {
+      console.error("Login Error:", error);
+      alert(language === 'hi' ? "लॉगिन विफल रहा।" : "Login failed. Please try again.");
+      setAppState('login'); // Return to login screen if failed
+    }
   };
 
   const handleFormSubmit = async (data: LegalDraftRequest) => {
@@ -53,6 +83,8 @@ const App: React.FC = () => {
       setAppState('drafting');
     }
   };
+
+  // ... (Rest of your render functions: renderInfoPage, renderLogin, etc. stay exactly the same)
 
   const renderInfoPage = (key: 'ethos' | 'jurisprudence' | 'resources') => {
     const pageData = t.pages[key];
