@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { LegalDraftRequest } from '../../types';
 import { Language, translations } from '../../translations';
@@ -8,6 +7,24 @@ interface DraftingFormProps {
   initialAadhaar: string;
   language: Language;
 }
+
+// --- UPDATED INFO TOOLTIP (Larger & Centered) ---
+const InfoTooltip: React.FC<{ text: string }> = ({ text }) => (
+  <div className="group relative inline-block ml-2 align-middle">
+    {/* Larger 'i' icon */}
+    <div className="w-5 h-5 rounded-full border border-regal-400 flex items-center justify-center text-xs font-serif italic text-regal-500 cursor-help group-hover:bg-regal-900 group-hover:text-white group-hover:border-regal-900 transition-all duration-300">
+      i
+    </div>
+    
+    {/* Larger Tooltip Box - Positioned precisely on top */}
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 hidden group-hover:block w-64 p-4 bg-regal-900 text-regal-50 text-xs font-serif leading-relaxed shadow-2xl z-[100] normal-case tracking-normal text-center rounded-sm animate-in fade-in zoom-in duration-200">
+      <p className="relative z-10">{text}</p>
+      
+      {/* Centered Arrow */}
+      <div className="absolute top-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-regal-900"></div>
+    </div>
+  </div>
+);
 
 const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, initialAadhaar, language }) => {
   const [step, setStep] = useState(1);
@@ -58,13 +75,16 @@ const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, initialAadhaar, l
   );
 
   return (
-    <div className="max-w-4xl mx-auto p-12 bg-white old-money-border">
+    <div className="max-w-4xl mx-auto p-12 bg-white old-money-border relative" style={{ overflow: 'visible' }}>
       <StepIndicator />
       
       <form onSubmit={handleSubmit} className="space-y-10">
         {step === 1 && (
           <div className="animate-fade-in space-y-8">
-            <h3 className="text-3xl font-serif text-regal-900 border-b border-regal-200 pb-4">{t.petitionerHeader}</h3>
+            <h3 className="text-3xl font-serif text-regal-900 border-b border-regal-200 pb-4">
+              {t.petitionerHeader}
+              <InfoTooltip text="This section captures the legal identity of the person filing the case. Ensure names match official government records." />
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-4">
                 <p className="text-xs font-bold uppercase tracking-widest text-regal-500">{t.petitionerSub}</p>
@@ -90,7 +110,10 @@ const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, initialAadhaar, l
                 />
               </div>
               <div className="space-y-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-regal-500">{t.respondentSub}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-regal-500">
+                  {t.respondentSub}
+                  <InfoTooltip text="The Respondent is the party against whom you are seeking relief. Accurate address details are crucial for serving court summons." />
+                </p>
                 <input
                   type="text"
                   placeholder="Name of Accused/Respondent"
@@ -114,7 +137,10 @@ const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, initialAadhaar, l
             <h3 className="text-3xl font-serif text-regal-900 border-b border-regal-200 pb-4">{t.jurisdictionHeader}</h3>
             <div className="space-y-6">
               <div>
-                <label className="text-xs uppercase tracking-widest font-bold text-regal-500">Type of Petition</label>
+                <label className="text-xs uppercase tracking-widest font-bold text-regal-500">
+                  Type of Petition
+                  <InfoTooltip text="Civil: Private disputes. Criminal: State-prosecuted offenses. Writ: Constitutional remedies against authorities. Consumer: Service/product grievances." />
+                </label>
                 <div className="flex flex-wrap gap-4 mt-3">
                   {['Civil', 'Criminal', 'Writ', 'Consumer'].map(type => (
                     <button
@@ -130,7 +156,10 @@ const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, initialAadhaar, l
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-widest font-bold text-regal-500">Territorial Jurisdiction</label>
+                  <label className="text-xs uppercase tracking-widest font-bold text-regal-500">
+                    Territorial Jurisdiction
+                    <InfoTooltip text="Specify the city or district court where the incident occurred. This determines if the court has the power to hear your specific case." />
+                  </label>
                   <input
                     type="text"
                     placeholder="e.g. District Court, New Delhi"
@@ -140,7 +169,10 @@ const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, initialAadhaar, l
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-widest font-bold text-regal-500">Pecuniary Jurisdiction</label>
+                  <label className="text-xs uppercase tracking-widest font-bold text-regal-500">
+                    Pecuniary Jurisdiction
+                    <InfoTooltip text="The monetary value of your claim. Different courts handle different financial brackets (e.g., District Court vs. High Court)." />
+                  </label>
                   <input
                     type="text"
                     placeholder="e.g. ₹ 5,00,000"
@@ -158,7 +190,10 @@ const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, initialAadhaar, l
           <div className="animate-fade-in space-y-8">
             <h3 className="text-3xl font-serif text-regal-900 border-b border-regal-200 pb-4">{t.causeHeader}</h3>
             <div className="space-y-4">
-              <label className="text-xs uppercase tracking-widest font-bold text-regal-500">{t.causeOfAction}</label>
+              <label className="text-xs uppercase tracking-widest font-bold text-regal-500">
+                {t.causeOfAction}
+                <InfoTooltip text="This is the heart of your petition. Describe the specific event, the date it happened, and how your legal rights were violated. Be detailed." />
+              </label>
               <textarea
                 placeholder="..."
                 className="w-full bg-regal-50 border-2 border-regal-100 p-6 font-serif italic outline-none focus:border-regal-900 min-h-[300px] text-lg leading-relaxed shadow-inner"
@@ -175,7 +210,10 @@ const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, initialAadhaar, l
                <svg className="w-12 h-12 text-regal-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             </div>
             <div className="space-y-4">
-              <h3 className="text-4xl font-serif text-regal-900">{t.reviewHeader}</h3>
+              <h3 className="text-4xl font-serif text-regal-900">
+                {t.reviewHeader}
+                <InfoTooltip text="Finalizing draft. Please ensure all names and dates are correct. The AI will generate a formal petition based on these inputs." />
+              </h3>
               <p className="text-regal-600 max-w-md mx-auto italic font-light">{t.reviewSub}</p>
             </div>
           </div>

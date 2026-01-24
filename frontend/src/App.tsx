@@ -13,6 +13,19 @@ import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 
 type AppState = 'landing' | 'verifying' | 'drafting' | 'loading' | 'viewing' | 'ethos' | 'jurisprudence' | 'resources' | 'login';
 
+// --- NEW: SUB-COMPONENT FOR INFO BUTTON ---
+const InfoTooltip: React.FC<{ text: string }> = ({ text }) => (
+  <div className="group relative inline-block ml-2 align-middle">
+    <div className="w-4 h-4 rounded-full border border-regal-400 flex items-center justify-center text-[10px] font-serif italic text-regal-500 cursor-help group-hover:border-regal-900 group-hover:text-regal-900 transition-colors">
+      i
+    </div>
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 p-2 bg-regal-900 text-regal-100 text-[10px] font-serif leading-tight shadow-2xl z-[70] normal-case tracking-normal text-center">
+      {text}
+      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-regal-900"></div>
+    </div>
+  </div>
+);
+
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>('landing');
   const [language, setLanguage] = useState<Language>('en');
@@ -43,13 +56,11 @@ const App: React.FC = () => {
     setAppState('loading');
     
     const formData = new FormData();
-    formData.append('file', file); // Backend expects 'file'
+    formData.append('file', file); 
 
     try {
-      // NOTE: Ensure backend is running on port 5000
       const response = await fetch('http://localhost:5000/verify-kyc', {
         method: 'POST',
-        // Authorization header temporarily removed for testing
         body: formData, 
       });
 
@@ -93,29 +104,21 @@ const App: React.FC = () => {
   };
 
   const handleFormSubmit = async (data: LegalDraftRequest) => {
-  setAppState('loading');
-
-  try {
-    console.log("⏳ Starting draft generation");
-
-    const result = await generateLegalDraft(data, language);
-
-    console.log("✅ Draft generated:", result.slice(0, 200));
-
-    setDraft(result);
-    setAppState('viewing');
-
-  } catch (error: any) {
-    console.error("❌ Drafting failed:", error);
-
-    alert(error?.message || "Unknown drafting error");
-    setAppState('drafting');
-  }
-};
-
+    setAppState('loading');
+    try {
+      console.log("⏳ Starting draft generation");
+      const result = await generateLegalDraft(data, language);
+      console.log("✅ Draft generated:", result.slice(0, 200));
+      setDraft(result);
+      setAppState('viewing');
+    } catch (error: any) {
+      console.error("❌ Drafting failed:", error);
+      alert(error?.message || "Unknown drafting error");
+      setAppState('drafting');
+    }
+  };
 
   // --- 4. RENDER HELPERS ---
-
   const renderInfoPage = (key: 'ethos' | 'jurisprudence' | 'resources') => {
     const pageData = t.pages[key];
     return (
@@ -218,13 +221,15 @@ const App: React.FC = () => {
 
         {appState === 'verifying' && (
           <div className="py-20 animate-fade-in">
-            {/* UPDATED: Pass the new handler here */}
             <AadhaarVerification onUpload={handleKycUpload} language={language} />
           </div>
         )}
 
         {appState === 'drafting' && (
           <div className="py-10 animate-fade-in">
+            {/* Note: To see the 'i' buttons, ensure DraftingForm.tsx labels 
+              include the InfoTooltip component as demonstrated in the previous step.
+            */}
             <DraftingForm onSubmit={handleFormSubmit} initialAadhaar={aadhaar} language={language} />
           </div>
         )}
