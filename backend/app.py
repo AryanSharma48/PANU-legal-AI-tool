@@ -6,6 +6,19 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token
 
+
+from dotenv import load_dotenv
+load_dotenv()
+
+import google.generativeai as genai
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+import google.generativeai as genai
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+print("API KEY FOUND:", bool(os.getenv("GOOGLE_API_KEY")))
+
+
 app = Flask(__name__)
 # Allow all origins for the demo to prevent CORS errors during the pitch
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -127,6 +140,53 @@ def verify_kyc():
         # Even if it fails, for a demo, sometimes you might just want to return success!
         # But let's return the error for debugging.
         return jsonify({"msg": "XML Processing Failed"}), 500
+    
+
+@app.route('/generate-draft', methods=['POST'])
+def generate_draft():
+    try:
+        payload = request.get_json(force=True)
+        data = payload.get("data")
+        language = payload.get("language", "en")
+
+        if not data:
+            return jsonify({"error": "Missing petition data"}), 400
+
+        lang_text = "HINDI (Devnagari script)" if language == "hi" else "ENGLISH"
+
+        prompt = f"""
+You are an expert Indian Legal Advocate.
+
+THE ENTIRE PETITION MUST BE WRITTEN IN {lang_text}.
+
+Type: {data.get('petitionType')}
+Petitioner: {data['petitioner']['name']}, Age: {data['petitioner']['age']}, Resident of: {data['petitioner']['address']}
+Respondent: {data['respondent']['name']}, Resident of: {data['respondent']['address']}
+
+Jurisdiction:
+- Territorial: {data['jurisdiction']['territorial']}
+- Pecuniary: {data['jurisdiction']['pecuniary']}
+
+Cause of Action:
+{data.get('causeOfAction')}
+
+Follow standard Indian court petition format.
+"""
+
+        model = genai.GenerativeModel("gemini-1.0-pro")
+        response = model.generate_content(prompt)
+
+        draft = response.text
+
+        if not draft or len(draft.strip()) < 50:
+            return jsonify({"error": "Empty draft generated"}), 502
+
+        return jsonify({"draft": draft}), 200
+
+    except Exception as e:
+        print("🔥 Draft generation error:", e)
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     # Running on port 5000
