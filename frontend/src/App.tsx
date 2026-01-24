@@ -1,7 +1,6 @@
-// src/App.tsx
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
-import AadhaarVerification from './components/AadhaarVerification';
+import AadhaarVerification from './components/AadhaarVerification'; 
 import DraftingForm from './components/DraftingForm';
 import PetitionViewer from './components/PetitionViewer';
 import { generateLegalDraft } from '../services/geminiService';
@@ -24,11 +23,9 @@ const App: React.FC = () => {
   const t = translations[language];
 
   // --- 1. AUTH STATE LISTENER ---
-  // This listens for changes (login/logout) automatically
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        // Map Firebase data to your App's User type
         setUser({
           name: firebaseUser.displayName || "Citizen",
           email: firebaseUser.email || "",
@@ -38,37 +35,60 @@ const App: React.FC = () => {
         setUser(null);
       }
     });
-
     return () => unsubscribe();
   }, []);
 
-  const handleVerified = (verifiedAadhaar: string) => {
-    setAadhaar(verifiedAadhaar);
-    setAppState('drafting');
+  // --- 2. NEW: HANDLE KYC UPLOAD (XML ONLY) ---
+  const handleKycUpload = async (file: File) => {
+    setAppState('loading');
+    
+    const formData = new FormData();
+    formData.append('file', file); // Backend expects 'file'
+
+    try {
+      // NOTE: Ensure backend is running on port 5000
+      const response = await fetch('http://localhost:5000/verify-kyc', {
+        method: 'POST',
+        // Authorization header temporarily removed for testing
+        body: formData, 
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("Verified:", data.name);
+        setAadhaar(data.name || "Verified Citizen");
+        setAppState('drafting');
+      } else {
+        alert(language === 'hi' ? `सत्यापन विफल: ${data.msg}` : `Verification Failed: ${data.msg}`);
+        setAppState('verifying');
+      }
+    } catch (error) {
+      console.error("Upload Error:", error);
+      alert(language === 'hi' ? "सर्वर से कनेक्ट नहीं हो सका।" : "Could not connect to the server. Is app.py running?");
+      setAppState('verifying');
+    }
   };
 
-  // --- 2. UPDATED LOGOUT ---
+  // --- 3. AUTH HANDLERS ---
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      // State updates via onAuthStateChanged, but we reset app flow here
       setAppState('landing');
     } catch (error) {
       console.error("Logout Error:", error);
     }
   };
 
-  // --- 3. UPDATED GOOGLE LOGIN ---
   const handleGoogleLogin = async () => {
     setAppState('loading');
     try {
       await signInWithPopup(auth, googleProvider);
-      // Login successful - The useEffect above will update the 'user' state
       setAppState('landing'); 
     } catch (error) {
       console.error("Login Error:", error);
       alert(language === 'hi' ? "लॉगिन विफल रहा।" : "Login failed. Please try again.");
-      setAppState('login'); // Return to login screen if failed
+      setAppState('login'); 
     }
   };
 
@@ -79,12 +99,12 @@ const App: React.FC = () => {
       setDraft(result);
       setAppState('viewing');
     } catch (error) {
-      alert(language === 'hi' ? "कानूनी प्रतिलेखन के दौरान कुछ गलत हो गया। कृपया पुन: प्रयास करें।" : "Something went wrong during the legal transcription. Please try again.");
+      alert(language === 'hi' ? "कानूनी प्रतिलेखन के दौरान कुछ गलत हो गया।" : "Something went wrong during the legal transcription.");
       setAppState('drafting');
     }
   };
 
-  // ... (Rest of your render functions: renderInfoPage, renderLogin, etc. stay exactly the same)
+  // --- 4. RENDER HELPERS ---
 
   const renderInfoPage = (key: 'ethos' | 'jurisprudence' | 'resources') => {
     const pageData = t.pages[key];
@@ -141,6 +161,7 @@ const App: React.FC = () => {
     );
   };
 
+  // --- 5. MAIN RENDER ---
   return (
     <div className={`min-h-screen ${language === 'hi' ? 'font-serif' : 'font-sans'}`}>
       <Navbar 
@@ -187,7 +208,8 @@ const App: React.FC = () => {
 
         {appState === 'verifying' && (
           <div className="py-20 animate-fade-in">
-            <AadhaarVerification onVerified={handleVerified} language={language} />
+            {/* UPDATED: Pass the new handler here */}
+            <AadhaarVerification onUpload={handleKycUpload} language={language} />
           </div>
         )}
 

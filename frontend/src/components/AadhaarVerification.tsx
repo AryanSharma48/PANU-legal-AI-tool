@@ -1,21 +1,30 @@
 import React, { useState, useRef } from 'react';
 import { Language, translations } from '../../translations';
 
-interface AadhaarUploadProps {
-  // This function will receive the file and code to send to your backend
-  onUpload: (file: File, shareCode: string) => Promise<void>; 
+interface AadhaarVerificationProps {
+  // Updated: We only send the file now, no share code
+  onUpload: (file: File) => Promise<void>; 
   language: Language;
 }
 
-const AadhaarUpload: React.FC<AadhaarUploadProps> = ({ onUpload, language }) => {
+const AadhaarVerification: React.FC<AadhaarVerificationProps> = ({ onUpload, language }) => {
   const [file, setFile] = useState<File | null>(null);
-  const [shareCode, setShareCode] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const t = translations[language].verification; // Assuming you add relevant keys here
+  
+  // Access translations safely
+  const t = translations[language]?.verification || {
+    title: "XML Verification",
+    subtitle: "Upload extracted Aadhaar Data File",
+    dragDrop: "Drag & Drop .xml file",
+    verifying: "Verifying...",
+    verifyBtn: "Verify Data",
+    errorFile: "Please select an XML file.",
+    errorType: "Please upload a valid .xml file."
+  };
 
   // --- Handlers ---
 
@@ -44,9 +53,9 @@ const AadhaarUpload: React.FC<AadhaarUploadProps> = ({ onUpload, language }) => 
 
   const validateAndSetFile = (uploadedFile: File) => {
     setError(null);
-    // basic check for zip extension or MIME type
-    if (!uploadedFile.name.endsWith('.zip') && uploadedFile.type !== 'application/zip') {
-      setError("Please upload a valid .zip file from UIDAI.");
+    // STRICT CHECK: XML ONLY
+    if (!uploadedFile.name.endsWith('.xml') && uploadedFile.type !== 'text/xml') {
+      setError(language === 'hi' ? "कृपया मान्य .xml फ़ाइल अपलोड करें।" : "Please upload a valid .xml file.");
       return;
     }
     setFile(uploadedFile);
@@ -54,8 +63,8 @@ const AadhaarUpload: React.FC<AadhaarUploadProps> = ({ onUpload, language }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || shareCode.length !== 4) {
-      setError("Please provide both the ZIP file and the 4-digit Share Code.");
+    if (!file) {
+      setError(language === 'hi' ? "कृपया एक फ़ाइल चुनें।" : "Please select an XML file.");
       return;
     }
 
@@ -63,10 +72,11 @@ const AadhaarUpload: React.FC<AadhaarUploadProps> = ({ onUpload, language }) => 
     setError(null);
 
     try {
-      await onUpload(file, shareCode);
+      // Call the parent function with ONLY the file
+      await onUpload(file);
     } catch (err) {
       console.error(err);
-      setError("Verification failed. Please check your file and code.");
+      setError(language === 'hi' ? "सत्यापन विफल रहा।" : "Verification failed. Please check your XML file.");
     } finally {
       setLoading(false);
     }
@@ -82,16 +92,16 @@ const AadhaarUpload: React.FC<AadhaarUploadProps> = ({ onUpload, language }) => 
 
       <div className="mb-10">
         <h2 className="text-3xl font-serif text-regal-900 uppercase tracking-widest mb-3">
-          Offline KYC
+          {language === 'hi' ? "एक्सएमएल सत्यापन" : "XML Verification"}
         </h2>
         <p className="text-regal-600 font-serif italic text-sm">
-          Secure Identity Verification via UIDAI
+          {language === 'hi' ? "निकाली गई आधार डेटा फ़ाइल अपलोड करें" : "Upload extracted Aadhaar Data File"}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
         
-        {/* --- 1. File Upload Zone --- */}
+        {/* --- File Upload Zone --- */}
         <div 
           className={`
             border-2 border-dashed transition-all duration-300 p-8 cursor-pointer
@@ -107,15 +117,18 @@ const AadhaarUpload: React.FC<AadhaarUploadProps> = ({ onUpload, language }) => 
             type="file" 
             ref={fileInputRef} 
             onChange={handleFileSelect} 
-            accept=".zip" 
+            accept=".xml" 
             className="hidden" 
           />
           
           {file ? (
             <div className="flex items-center justify-center gap-4 animate-fade-in">
-              <svg className="w-8 h-8 text-regal-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <div className="w-10 h-10 border-2 border-regal-900 rounded-full flex items-center justify-center bg-white">
+                {/* XML Icon */}
+                <svg className="w-5 h-5 text-regal-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
               <div className="text-left">
                 <p className="font-bold text-regal-900 font-serif">{file.name}</p>
                 <p className="text-xs text-regal-500">{(file.size / 1024).toFixed(1)} KB</p>
@@ -127,30 +140,10 @@ const AadhaarUpload: React.FC<AadhaarUploadProps> = ({ onUpload, language }) => 
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
               <p className="text-regal-500 font-serif uppercase tracking-wider text-xs">
-                Drag & Drop KYC Zip or Click to Upload
+                {language === 'hi' ? ".xml फ़ाइल यहाँ खींचें" : "Drag & Drop .xml file"}
               </p>
             </div>
           )}
-        </div>
-
-        {/* --- 2. Share Code Input --- */}
-        <div className="relative group">
-          <label className="block text-xs uppercase tracking-widest text-regal-700 mb-2 font-bold text-left ml-1">
-            4-Digit Share Code
-          </label>
-          <input
-            type="text"
-            maxLength={4}
-            value={shareCode}
-            onChange={(e) => setShareCode(e.target.value.replace(/\D/g, ''))} // Numbers only
-            placeholder="XXXX"
-            className="w-full bg-transparent border-b-2 border-regal-200 focus:border-regal-900 py-3 text-center text-3xl font-serif tracking-[0.5em] outline-none transition-all placeholder:text-regal-200"
-          />
-          <div className="absolute right-0 top-8 group-hover:opacity-100 opacity-0 transition-opacity">
-            <div className="bg-regal-900 text-white text-[10px] px-2 py-1 rounded">
-              The code you set when downloading
-            </div>
-          </div>
         </div>
 
         {/* Error Message */}
@@ -160,20 +153,20 @@ const AadhaarUpload: React.FC<AadhaarUploadProps> = ({ onUpload, language }) => 
           </p>
         )}
 
-        {/* --- 3. Submit Button --- */}
+        {/* --- Submit Button --- */}
         <button
           type="submit"
-          disabled={loading || !file || shareCode.length !== 4}
+          disabled={loading || !file}
           className="w-full bg-regal-900 text-regal-100 py-5 font-serif text-xl tracking-[0.2em] uppercase hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-3 group"
         >
           {loading ? (
             <>
               <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              Verifying...
+              {language === 'hi' ? "सत्यापन हो रहा है..." : "Verifying..."}
             </>
           ) : (
             <>
-              Verify Identity
+              {language === 'hi' ? "सत्यापित करें" : "Verify Data"}
               <span className="group-hover:translate-x-1 transition-transform">→</span>
             </>
           )}
@@ -184,4 +177,4 @@ const AadhaarUpload: React.FC<AadhaarUploadProps> = ({ onUpload, language }) => 
   );
 };
 
-export default AadhaarUpload;
+export default AadhaarVerification;
