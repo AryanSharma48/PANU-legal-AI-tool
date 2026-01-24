@@ -3,7 +3,7 @@ import Navbar from './components/Navbar';
 import AadhaarVerification from './components/AadhaarVerification'; 
 import DraftingForm from './components/DraftingForm';
 import PetitionViewer from './components/PetitionViewer';
-import { generateLegalDraft } from '../services/geminiService';
+import { generateLegalDraft } from './services/geminiService';
 import { LegalDraftRequest, User } from '../types';
 import { Language, translations } from '../translations';
 
@@ -93,16 +93,26 @@ const App: React.FC = () => {
   };
 
   const handleFormSubmit = async (data: LegalDraftRequest) => {
-    setAppState('loading');
-    try {
-      const result = await generateLegalDraft(data, language);
-      setDraft(result);
-      setAppState('viewing');
-    } catch (error) {
-      alert(language === 'hi' ? "कानूनी प्रतिलेखन के दौरान कुछ गलत हो गया।" : "Something went wrong during the legal transcription.");
-      setAppState('drafting');
-    }
-  };
+  setAppState('loading');
+
+  try {
+    console.log("⏳ Starting draft generation");
+
+    const result = await generateLegalDraft(data, language);
+
+    console.log("✅ Draft generated:", result.slice(0, 200));
+
+    setDraft(result);
+    setAppState('viewing');
+
+  } catch (error: any) {
+    console.error("❌ Drafting failed:", error);
+
+    alert(error?.message || "Unknown drafting error");
+    setAppState('drafting');
+  }
+};
+
 
   // --- 4. RENDER HELPERS ---
 
