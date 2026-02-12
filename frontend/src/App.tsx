@@ -87,10 +87,8 @@ const App: React.FC = () => {
     setAppState('loading');
     try {
       await signInWithPopup(auth, googleProvider);
-      // After login, check if profile exists — if not, show profile form
-      // The onAuthStateChanged listener will handle fetching the profile
-      // We'll redirect in a moment once user state updates
-      setAppState('profile');
+      // After login, go to landing page. User can visit profile optionally.
+      setAppState('landing');
     } catch (error) {
       console.error("Login Error:", error);
       alert(language === 'hi' ? "लॉगिन विफल रहा।" : "Login failed. Please try again.");
@@ -120,18 +118,13 @@ const App: React.FC = () => {
     }
   };
 
-  // Navigate to drafting — show profile form if profile is incomplete
+  // Navigate to drafting — allow access even if profile incomplete
   const goToDrafting = () => {
     if (!user) {
       setAppState('login');
       return;
     }
-    // If no profile or missing key fields, show profile form first
-    if (!userProfile || !userProfile.full_name || !userProfile.address) {
-      setAppState('profile');
-    } else {
-      setAppState('drafting');
-    }
+    setAppState('drafting');
   };
 
   const handleFormSubmit = async (data: LegalDraftRequest) => {
@@ -289,7 +282,20 @@ const App: React.FC = () => {
 
         {appState === 'drafting' && (
           <div className="py-10 animate-fade-in">
-            <DraftingForm onSubmit={handleFormSubmit} language={language} userProfile={userProfile} />
+            <DraftingForm
+              onSubmit={handleFormSubmit}
+              language={language}
+              userProfile={userProfile || (user ? {
+                id: user.id,
+                full_name: user.name,
+                email: user.email,
+                address: '',
+                phone: '',
+                age: 0,
+                jurisdiction: '',
+                avatar_url: user.photo || ''
+              } : null)}
+            />
           </div>
         )}
 
