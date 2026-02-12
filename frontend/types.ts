@@ -8,7 +8,6 @@ export interface PetitionerInfo {
   name: string;
   address: string;
   age: number;
-  aadhaarNumber: string;
 }
 
 export interface RespondentInfo {
@@ -30,6 +29,7 @@ export interface LegalDraftResponse {
 }
 
 export interface User {
+  id: string;
   name: string;
   email: string;
   photo?: string;

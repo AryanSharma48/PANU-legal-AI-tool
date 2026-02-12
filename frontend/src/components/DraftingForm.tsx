@@ -4,7 +4,6 @@ import { Language, translations } from '../../translations';
 
 interface DraftingFormProps {
   onSubmit: (data: LegalDraftRequest) => void;
-  initialAadhaar: string;
   language: Language;
 }
 
@@ -15,23 +14,23 @@ const InfoTooltip: React.FC<{ text: string }> = ({ text }) => (
     <div className="w-5 h-5 rounded-full border border-regal-400 flex items-center justify-center text-xs font-serif italic text-regal-500 cursor-help group-hover:bg-regal-900 group-hover:text-white group-hover:border-regal-900 transition-all duration-300">
       i
     </div>
-    
+
     {/* Larger Tooltip Box - Positioned precisely on top */}
     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 hidden group-hover:block w-64 p-4 bg-regal-900 text-regal-50 text-xs font-serif leading-relaxed shadow-2xl z-[100] normal-case tracking-normal text-center rounded-sm animate-in fade-in zoom-in duration-200">
       <p className="relative z-10">{text}</p>
-      
+
       {/* Centered Arrow */}
       <div className="absolute top-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-regal-900"></div>
     </div>
   </div>
 );
 
-const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, initialAadhaar, language }) => {
+const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, language }) => {
   const [step, setStep] = useState(1);
   const t = translations[language].drafting;
-  
+
   const [formData, setFormData] = useState<Partial<LegalDraftRequest>>({
-    petitioner: { name: '', address: '', age: 0, aadhaarNumber: initialAadhaar },
+    petitioner: { name: '', address: '', age: 0 },
     respondent: { name: '', address: '' },
     jurisdiction: { territorial: '', pecuniary: '' },
     causeOfAction: '',
@@ -77,7 +76,7 @@ const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, initialAadhaar, l
   return (
     <div className="max-w-4xl mx-auto p-12 bg-white old-money-border relative" style={{ overflow: 'visible' }}>
       <StepIndicator />
-      
+
       <form onSubmit={handleSubmit} className="space-y-10">
         {step === 1 && (
           <div className="animate-fade-in space-y-8">
@@ -207,7 +206,7 @@ const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, initialAadhaar, l
         {step === 4 && (
           <div className="animate-fade-in text-center space-y-10 py-10">
             <div className="w-24 h-24 border-2 border-regal-900 rounded-full flex items-center justify-center mx-auto bg-regal-50">
-               <svg className="w-12 h-12 text-regal-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              <svg className="w-12 h-12 text-regal-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             </div>
             <div className="space-y-4">
               <h3 className="text-4xl font-serif text-regal-900">

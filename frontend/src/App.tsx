@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
-import AadhaarVerification from './components/AadhaarVerification'; 
 import DraftingForm from './components/DraftingForm';
 import PetitionViewer from './components/PetitionViewer';
 import { generateLegalDraft } from './services/geminiService';
 import { LegalDraftRequest, User } from '../types';
 import { Language, translations } from '../translations';
 
-// --- FIREBASE IMPORTS ---
-import { auth, googleProvider } from './firebase'; 
+// --- FIREBASE AUTH ---
+import { auth, googleProvider } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 
-type AppState = 'landing' | 'verifying' | 'drafting' | 'loading' | 'viewing' | 'ethos' | 'jurisprudence' | 'resources' | 'login';
+type AppState = 'landing' | 'drafting' | 'loading' | 'viewing' | 'ethos' | 'jurisprudence' | 'resources' | 'login';
 
-// --- NEW: SUB-COMPONENT FOR INFO BUTTON ---
+// --- SUB-COMPONENT FOR INFO BUTTON ---
 const InfoTooltip: React.FC<{ text: string }> = ({ text }) => (
   <div className="group relative inline-block ml-2 align-middle">
     <div className="w-4 h-4 rounded-full border border-regal-400 flex items-center justify-center text-[10px] font-serif italic text-regal-500 cursor-help group-hover:border-regal-900 group-hover:text-regal-900 transition-colors">
@@ -29,21 +28,38 @@ const InfoTooltip: React.FC<{ text: string }> = ({ text }) => (
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>('landing');
   const [language, setLanguage] = useState<Language>('en');
-  const [aadhaar, setAadhaar] = useState('');
   const [draft, setDraft] = useState('');
   const [user, setUser] = useState<User | null>(null);
 
   const t = translations[language];
 
-  // --- 1. AUTH STATE LISTENER ---
+  // --- 1. FIREBASE AUTH STATE LISTENER ---
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        setUser({
+        const userData: User = {
+          id: firebaseUser.uid,
           name: firebaseUser.displayName || "Citizen",
           email: firebaseUser.email || "",
-          photo: firebaseUser.photoURL || undefined
-        });
+          photo: firebaseUser.photoURL || undefined,
+        };
+        setUser(userData);
+
+        // Sync profile to Supabase backend
+        try {
+          await fetch("http://localhost:5000/api/profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: firebaseUser.uid,
+              email: firebaseUser.email || "",
+              full_name: userData.name,
+              avatar_url: userData.photo || "",
+            }),
+          });
+        } catch (err) {
+          console.warn("Profile sync failed (backend may be down):", err);
+        }
       } else {
         setUser(null);
       }
@@ -51,37 +67,7 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // --- 2. NEW: HANDLE KYC UPLOAD (XML ONLY) ---
-  const handleKycUpload = async (file: File) => {
-    setAppState('loading');
-    
-    const formData = new FormData();
-    formData.append('file', file); 
-
-    try {
-      const response = await fetch('http://localhost:5000/verify-kyc', {
-        method: 'POST',
-        body: formData, 
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log("Verified:", data.name);
-        setAadhaar(data.name || "Verified Citizen");
-        setAppState('drafting');
-      } else {
-        alert(language === 'hi' ? `सत्यापन विफल: ${data.msg}` : `Verification Failed: ${data.msg}`);
-        setAppState('verifying');
-      }
-    } catch (error) {
-      console.error("Upload Error:", error);
-      alert(language === 'hi' ? "सर्वर से कनेक्ट नहीं हो सका।" : "Could not connect to the server. Is app.py running?");
-      setAppState('verifying');
-    }
-  };
-
-  // --- 3. AUTH HANDLERS ---
+  // --- 2. AUTH HANDLERS ---
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -95,11 +81,11 @@ const App: React.FC = () => {
     setAppState('loading');
     try {
       await signInWithPopup(auth, googleProvider);
-      setAppState('landing'); 
+      setAppState('landing');
     } catch (error) {
       console.error("Login Error:", error);
       alert(language === 'hi' ? "लॉगिन विफल रहा।" : "Login failed. Please try again.");
-      setAppState('login'); 
+      setAppState('login');
     }
   };
 
@@ -118,7 +104,7 @@ const App: React.FC = () => {
     }
   };
 
-  // --- 4. RENDER HELPERS ---
+  // --- 3. RENDER HELPERS ---
   const renderInfoPage = (key: 'ethos' | 'jurisprudence' | 'resources') => {
     const pageData = t.pages[key];
     return (
@@ -152,16 +138,16 @@ const App: React.FC = () => {
             <p className="text-regal-500 italic text-sm mt-2">{l.subtitle}</p>
           </div>
 
-          <button 
+          <button
             onClick={handleGoogleLogin}
             className="w-full flex items-center justify-center gap-4 border border-regal-300 py-5 hover:bg-regal-50 transition-all group shadow-sm"
           >
             <svg className="w-5 h-5" viewBox="0 0 48 48">
-              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-              <path fill="none" d="M0 0h48v48H0z"/>
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+              <path fill="none" d="M0 0h48v48H0z" />
             </svg>
             <span className="font-serif font-bold text-regal-800 uppercase tracking-widest text-xs">{l.googleBtn}</span>
           </button>
@@ -174,13 +160,13 @@ const App: React.FC = () => {
     );
   };
 
-  // --- 5. MAIN RENDER ---
+  // --- 4. MAIN RENDER ---
   return (
     <div className={`min-h-screen ${language === 'hi' ? 'font-serif' : 'font-sans'}`}>
-      <Navbar 
-        language={language} 
-        setLanguage={setLanguage} 
-        onNavigate={setAppState} 
+      <Navbar
+        language={language}
+        setLanguage={setLanguage}
+        onNavigate={setAppState}
         user={user}
         onLogout={handleLogout}
       />
@@ -196,41 +182,32 @@ const App: React.FC = () => {
               {t.landing.description}
             </p>
             <button
-              onClick={() => setAppState(user ? 'verifying' : 'login')}
+              onClick={() => setAppState(user ? 'drafting' : 'login')}
               className="px-16 py-6 bg-regal-900 text-regal-100 font-serif text-2xl tracking-[0.2em] uppercase hover:bg-black transition-all duration-500 shadow-2xl group"
             >
               {t.landing.beginBtn}
               <span className="inline-block ml-4 group-hover:translate-x-2 transition-transform">→</span>
             </button>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pt-24 border-t border-regal-200 w-full">
-               <div className="space-y-4">
-                 <h4 className="text-xs font-bold uppercase tracking-widest text-regal-500">{t.landing.feature1Title}</h4>
-                 <p className="font-serif text-lg text-regal-800">{t.landing.feature1Text}</p>
-               </div>
-               <div className="space-y-4">
-                 <h4 className="text-xs font-bold uppercase tracking-widest text-regal-500">{t.landing.feature2Title}</h4>
-                 <p className="font-serif text-lg text-regal-800">{t.landing.feature2Text}</p>
-               </div>
-               <div className="space-y-4">
-                 <h4 className="text-xs font-bold uppercase tracking-widest text-regal-500">{t.landing.feature3Title}</h4>
-                 <p className="font-serif text-lg text-regal-800">{t.landing.feature3Text}</p>
-               </div>
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-regal-500">{t.landing.feature1Title}</h4>
+                <p className="font-serif text-lg text-regal-800">{t.landing.feature1Text}</p>
+              </div>
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-regal-500">{t.landing.feature2Title}</h4>
+                <p className="font-serif text-lg text-regal-800">{t.landing.feature2Text}</p>
+              </div>
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-regal-500">{t.landing.feature3Title}</h4>
+                <p className="font-serif text-lg text-regal-800">{t.landing.feature3Text}</p>
+              </div>
             </div>
-          </div>
-        )}
-
-        {appState === 'verifying' && (
-          <div className="py-20 animate-fade-in">
-            <AadhaarVerification onUpload={handleKycUpload} language={language} />
           </div>
         )}
 
         {appState === 'drafting' && (
           <div className="py-10 animate-fade-in">
-            {/* Note: To see the 'i' buttons, ensure DraftingForm.tsx labels 
-              include the InfoTooltip component as demonstrated in the previous step.
-            */}
-            <DraftingForm onSubmit={handleFormSubmit} initialAadhaar={aadhaar} language={language} />
+            <DraftingForm onSubmit={handleFormSubmit} language={language} />
           </div>
         )}
 
@@ -247,7 +224,7 @@ const App: React.FC = () => {
               <p className="text-regal-500 italic font-serif">{t.loading.subtitle}</p>
             </div>
             <div className="max-w-xs w-full h-1 bg-regal-100 overflow-hidden mt-8">
-               <div className="w-full h-full bg-regal-900 animate-[loading_2s_ease-in-out_infinite]"></div>
+              <div className="w-full h-full bg-regal-900 animate-[loading_2s_ease-in-out_infinite]"></div>
             </div>
           </div>
         )}

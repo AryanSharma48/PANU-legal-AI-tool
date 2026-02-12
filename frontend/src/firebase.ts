@@ -2,14 +2,14 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
-// Your web app's Firebase configuration
+// Your web app's Firebase configuration (loaded from .env)
 const firebaseConfig = {
-  apiKey: "AIzaSyC-fHviuHSGz1Vj_ZuSrntVrMp9jHh30IA",
-  authDomain: "panu-swj.firebaseapp.com",
-  projectId: "panu-swj",
-  storageBucket: "panu-swj.firebasestorage.app",
-  messagingSenderId: "137090641503",
-  appId: "1:137090641503:web:df05f24e086f27037b35ea"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase

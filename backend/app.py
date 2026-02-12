@@ -1,156 +1,141 @@
-import sqlite3
 import os
-import xml.etree.ElementTree as ET
-from flask import Flask, jsonify, request
-from flask_cors import CORS
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_jwt_extended import JWTManager, create_access_token
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from typing import Optional
 
 from dotenv import load_dotenv
 load_dotenv()
 
 import google.generativeai as genai
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+from supabase import create_client, Client
 
-import google.generativeai as genai
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+# --- CONFIG ---
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-print("API KEY FOUND:", bool(os.getenv("GOOGLE_API_KEY")))
+genai.configure(api_key=GEMINI_API_KEY)
+
+# Supabase admin client (server-side, uses secret key)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
+
+print("✅ Supabase URL:", SUPABASE_URL)
+print("✅ Gemini API Key found:", bool(GEMINI_API_KEY))
 
 
-app = Flask(__name__)
-# Allow all origins for the demo to prevent CORS errors during the pitch
-CORS(app, resources={r"/*": {"origins": "*"}})
+# --- PYDANTIC MODELS ---
 
-# CONFIGURATION
-app.config["JWT_SECRET_KEY"] = "startup-weekend-jaipur-demo-key"
-jwt = JWTManager(app)
+class ProfileCreate(BaseModel):
+    id: str  # Supabase auth user ID (UUID)
+    email: str
+    full_name: Optional[str] = ""
+    address: Optional[str] = ""
+    phone: Optional[str] = ""
+    avatar_url: Optional[str] = ""
 
-# DATABASE SETUP
-DB_NAME = "panu.db"
 
-def init_db():
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            username TEXT PRIMARY KEY, 
-            password TEXT, 
-            kyc_verified BOOLEAN,
-            full_name TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
+class PetitionerInfo(BaseModel):
+    name: str
+    address: str
+    age: int
 
-init_db()
 
-# --- AUTH ROUTES ---
+class RespondentInfo(BaseModel):
+    name: str
+    address: str
 
-@app.route('/register', methods=['POST'])
-def register():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
+
+class JurisdictionInfo(BaseModel):
+    territorial: str
+    pecuniary: str
+
+
+class DraftRequest(BaseModel):
+    data: dict
+    language: str = "en"
+
+
+# --- APP ---
+
+app = FastAPI(title="PANU Legal AI API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# --- HELPER: Get current user from Supabase JWT ---
+
+async def get_current_user(request: Request) -> dict:
+    """Extract and verify the Supabase JWT from the Authorization header."""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
     
-    hashed_pw = generate_password_hash(password)
-    
+    token = auth_header.split(" ")[1]
     try:
-        with sqlite3.connect(DB_NAME) as conn:
-            c = conn.cursor()
-            c.execute("INSERT INTO users (username, password, kyc_verified) VALUES (?, ?, ?)", 
-                      (username, hashed_pw, False))
-            conn.commit()
-    except sqlite3.IntegrityError:
-        return jsonify({"msg": "User already exists"}), 400
-        
-    return jsonify({"msg": "User created successfully"}), 201
-
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    
-    with sqlite3.connect(DB_NAME) as conn:
-        c = conn.cursor()
-        c.execute("SELECT password FROM users WHERE username = ?", (username,))
-        result = c.fetchone()
-    
-    if not result or not check_password_hash(result[0], password):
-        return jsonify({"msg": "Bad username or password"}), 401
-
-    access_token = create_access_token(identity=username)
-    return jsonify(access_token=access_token)
-
-# --- KYC ROUTE (DEMO MODE: XML PARSING ONLY) ---
-
-@app.route('/verify-kyc', methods=['POST'])
-def verify_kyc():
-    # In a real app, we would verify the JWT here. 
-    # For the demo, we assume the current user is whoever is presenting.
-    current_user = "demo_user" 
-
-    if 'file' not in request.files:
-        return jsonify({"msg": "No file uploaded"}), 400
-    
-    xml_file = request.files['file']
-    
-    try:
-        # 1. Read the XML directly
-        xml_content = xml_file.read()
-        
-        # 2. Parse it to find the Name
-        root = ET.fromstring(xml_content)
-        
-        # Robust search for UidData (handles different XML versions)
-        uid_data = root.find('.//UidData') or root.find('UidData')
-        
-        if uid_data is None:
-            # Fallback: If root is UidData itself
-            if root.tag.endswith('UidData'):
-                uid_data = root
-
-        if uid_data is None:
-            print("Debug: Could not find UidData tag")
-            return jsonify({"msg": "Invalid XML structure"}), 400
-
-        # Extract Name from <Poi> tag
-        poi = uid_data.find('Poi') or uid_data.find('.//Poi')
-        name = poi.get('name') if poi is not None else "Verified Citizen"
-        
-        # 3. Update the Database (So the app remembers they are verified)
-        with sqlite3.connect(DB_NAME) as conn:
-            c = conn.cursor()
-            # We blindly update 'demo_user' or create them if missing
-            c.execute("INSERT OR REPLACE INTO users (username, kyc_verified, full_name) VALUES (?, ?, ?)", 
-                      (current_user, True, name))
-            conn.commit()
-
-        print(f"✅ DEMO SUCCESS: Verified as {name}")
-        return jsonify({
-            "msg": "KYC Verified Successfully", 
-            "name": name,
-            "status": "verified"
-        }), 200
-
+        user_response = supabase.auth.get_user(token)
+        return user_response.user
     except Exception as e:
-        print(f"❌ DEMO ERROR: {e}")
-        # Even if it fails, for a demo, sometimes you might just want to return success!
-        # But let's return the error for debugging.
-        return jsonify({"msg": "XML Processing Failed"}), 500
-    
+        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
 
-@app.route('/generate-draft', methods=['POST'])
-def generate_draft():
+
+# --- PROFILE ROUTES ---
+
+@app.post("/api/profile")
+async def upsert_profile(profile: ProfileCreate):
+    """Create or update a user profile after login."""
     try:
-        payload = request.get_json(force=True)
-        data = payload.get("data")
-        language = payload.get("language", "en")
+        data = {
+            "id": profile.id,
+            "email": profile.email,
+            "full_name": profile.full_name or "",
+            "address": profile.address or "",
+            "phone": profile.phone or "",
+            "avatar_url": profile.avatar_url or "",
+            "updated_at": "now()",
+        }
+        
+        result = supabase.table("profiles").upsert(data, on_conflict="id").execute()
+        return {"msg": "Profile saved", "data": result.data}
+    except Exception as e:
+        print(f"❌ Profile upsert error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/profile/{user_id}")
+async def get_profile(user_id: str):
+    """Get a user's profile by their Supabase auth ID."""
+    try:
+        result = supabase.table("profiles").select("*").eq("id", user_id).execute()
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        return result.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Profile fetch error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- DRAFT GENERATION ROUTE ---
+
+@app.post("/api/generate-draft")
+async def generate_draft(req: DraftRequest):
+    """Generate a legal petition draft using Gemini AI."""
+    try:
+        data = req.data
+        language = req.language
 
         if not data:
-            return jsonify({"error": "Missing petition data"}), 400
+            raise HTTPException(status_code=400, detail="Missing petition data")
 
         lang_text = "HINDI (Devnagari script)" if language == "hi" else "ENGLISH"
 
@@ -175,19 +160,27 @@ Follow standard Indian court petition format.
 
         model = genai.GenerativeModel("gemini-1.0-pro")
         response = model.generate_content(prompt)
-
         draft = response.text
 
         if not draft or len(draft.strip()) < 50:
-            return jsonify({"error": "Empty draft generated"}), 502
+            raise HTTPException(status_code=502, detail="Empty draft generated")
 
-        return jsonify({"draft": draft}), 200
+        return {"draft": draft}
 
+    except HTTPException:
+        raise
     except Exception as e:
         print("🔥 Draft generation error:", e)
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-if __name__ == '__main__':
-    # Running on port 5000
-    app.run(debug=True, port=5000)
+# --- HEALTH CHECK ---
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok", "service": "PANU Legal AI"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app:app", host="0.0.0.0", port=5000, reload=True)
