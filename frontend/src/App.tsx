@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import DraftingForm from './components/DraftingForm';
+import ProfileForm from './components/ProfileForm';
 import PetitionViewer from './components/PetitionViewer';
 import { generateLegalDraft } from './services/geminiService';
-import { LegalDraftRequest, User } from '../types';
+import { LegalDraftRequest, User, UserProfile } from '../types';
 import { Language, translations } from '../translations';
 
 // --- FIREBASE AUTH ---
 import { auth, googleProvider } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 
-type AppState = 'landing' | 'drafting' | 'loading' | 'viewing' | 'ethos' | 'jurisprudence' | 'resources' | 'login';
+type AppState = 'landing' | 'profile' | 'myprofile' | 'drafting' | 'loading' | 'viewing' | 'ethos' | 'jurisprudence' | 'resources' | 'login';
+
+const API_URL = "http://localhost:5000";
 
 // --- SUB-COMPONENT FOR INFO BUTTON ---
 const InfoTooltip: React.FC<{ text: string }> = ({ text }) => (
@@ -30,6 +33,7 @@ const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>('en');
   const [draft, setDraft] = useState('');
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   const t = translations[language];
 
@@ -45,23 +49,23 @@ const App: React.FC = () => {
         };
         setUser(userData);
 
-        // Sync profile to Supabase backend
+        // Try to fetch existing profile from backend
         try {
-          await fetch("http://localhost:5000/api/profile", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: firebaseUser.uid,
-              email: firebaseUser.email || "",
-              full_name: userData.name,
-              avatar_url: userData.photo || "",
-            }),
-          });
+          const res = await fetch(`${API_URL}/api/profile/${firebaseUser.uid}`);
+          if (res.ok) {
+            const profile = await res.json();
+            setUserProfile(profile);
+          } else {
+            // No profile yet — will show profile form
+            setUserProfile(null);
+          }
         } catch (err) {
-          console.warn("Profile sync failed (backend may be down):", err);
+          console.warn("Profile fetch failed (backend may be down):", err);
+          setUserProfile(null);
         }
       } else {
         setUser(null);
+        setUserProfile(null);
       }
     });
     return () => unsubscribe();
@@ -71,6 +75,8 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      setUser(null);
+      setUserProfile(null);
       setAppState('landing');
     } catch (error) {
       console.error("Logout Error:", error);
@@ -81,11 +87,50 @@ const App: React.FC = () => {
     setAppState('loading');
     try {
       await signInWithPopup(auth, googleProvider);
-      setAppState('landing');
+      // After login, check if profile exists — if not, show profile form
+      // The onAuthStateChanged listener will handle fetching the profile
+      // We'll redirect in a moment once user state updates
+      setAppState('profile');
     } catch (error) {
       console.error("Login Error:", error);
       alert(language === 'hi' ? "लॉगिन विफल रहा।" : "Login failed. Please try again.");
       setAppState('login');
+    }
+  };
+
+  const handleProfileSave = async (profile: UserProfile, redirectTo: AppState = 'drafting') => {
+    try {
+      setAppState('loading');
+      const res = await fetch(`${API_URL}/api/profile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profile),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        setUserProfile(result.data?.[0] || profile);
+        setAppState(redirectTo);
+      } else {
+        throw new Error("Failed to save profile");
+      }
+    } catch (err) {
+      console.error("Profile save error:", err);
+      alert(language === 'hi' ? "प्रोफ़ाइल सहेजने में विफल" : "Failed to save profile. Please try again.");
+      setAppState('profile');
+    }
+  };
+
+  // Navigate to drafting — show profile form if profile is incomplete
+  const goToDrafting = () => {
+    if (!user) {
+      setAppState('login');
+      return;
+    }
+    // If no profile or missing key fields, show profile form first
+    if (!userProfile || !userProfile.full_name || !userProfile.address) {
+      setAppState('profile');
+    } else {
+      setAppState('drafting');
     }
   };
 
@@ -182,7 +227,7 @@ const App: React.FC = () => {
               {t.landing.description}
             </p>
             <button
-              onClick={() => setAppState(user ? 'drafting' : 'login')}
+              onClick={goToDrafting}
               className="px-16 py-6 bg-regal-900 text-regal-100 font-serif text-2xl tracking-[0.2em] uppercase hover:bg-black transition-all duration-500 shadow-2xl group"
             >
               {t.landing.beginBtn}
@@ -205,9 +250,46 @@ const App: React.FC = () => {
           </div>
         )}
 
+        {/* Profile Form — shown after first login or when profile is incomplete */}
+        {appState === 'profile' && user && (
+          <ProfileForm
+            initialProfile={{
+              id: user.id,
+              email: user.email,
+              full_name: userProfile?.full_name || user.name,
+              address: userProfile?.address || '',
+              phone: userProfile?.phone || '',
+              age: userProfile?.age || 0,
+              jurisdiction: userProfile?.jurisdiction || '',
+              avatar_url: user.photo || '',
+            }}
+            onSave={(p) => handleProfileSave(p)} // default redirect to 'drafting'
+            language={language}
+          />
+        )}
+
+        {/* My Profile — View/Edit Mode */}
+        {appState === 'myprofile' && user && (
+          <ProfileForm
+            initialProfile={{
+              id: user.id,
+              email: user.email,
+              full_name: userProfile?.full_name || user.name,
+              address: userProfile?.address || '',
+              phone: userProfile?.phone || '',
+              age: userProfile?.age || 0,
+              jurisdiction: userProfile?.jurisdiction || '',
+              avatar_url: user.photo || '',
+            }}
+            onSave={(p) => handleProfileSave(p, 'landing')}
+            language={language}
+            isEditMode={true}
+          />
+        )}
+
         {appState === 'drafting' && (
           <div className="py-10 animate-fade-in">
-            <DraftingForm onSubmit={handleFormSubmit} language={language} />
+            <DraftingForm onSubmit={handleFormSubmit} language={language} userProfile={userProfile} />
           </div>
         )}
 

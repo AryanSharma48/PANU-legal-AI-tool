@@ -34,6 +34,8 @@ class ProfileCreate(BaseModel):
     full_name: Optional[str] = ""
     address: Optional[str] = ""
     phone: Optional[str] = ""
+    age: Optional[int] = 0
+    jurisdiction: Optional[str] = ""
     avatar_url: Optional[str] = ""
 
 
@@ -99,6 +101,8 @@ async def upsert_profile(profile: ProfileCreate):
             "full_name": profile.full_name or "",
             "address": profile.address or "",
             "phone": profile.phone or "",
+            "age": profile.age or 0,
+            "jurisdiction": profile.jurisdiction or "",
             "avatar_url": profile.avatar_url or "",
             "updated_at": "now()",
         }

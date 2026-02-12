@@ -35,3 +35,13 @@ export interface User {
   photo?: string;
 }
 
+export interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  address: string;
+  phone: string;
+  age: number;
+  jurisdiction: string;
+  avatar_url: string;
+}

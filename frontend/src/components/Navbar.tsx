@@ -47,12 +47,21 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, onNavigate, user
             <div className="flex items-center gap-4 border-l border-regal-200 pl-6 animate-fade-in">
               <div className="text-right">
                 <p className="text-xs font-bold text-regal-900 tracking-wider uppercase leading-none">{user.name}</p>
-                <button
-                  onClick={onLogout}
-                  className="text-[9px] text-regal-500 uppercase font-bold tracking-widest hover:text-red-700 transition-colors"
-                >
-                  {t.logout}
-                </button>
+                <div className="flex gap-3 justify-end mt-0.5">
+                  <button
+                    onClick={() => onNavigate('myprofile')}
+                    className="text-[9px] text-regal-500 uppercase font-bold tracking-widest hover:text-regal-900 transition-colors"
+                  >
+                    {language === 'hi' ? 'प्रोफ़ाइल' : 'Profile'}
+                  </button>
+                  <span className="text-regal-300">|</span>
+                  <button
+                    onClick={onLogout}
+                    className="text-[9px] text-regal-500 uppercase font-bold tracking-widest hover:text-red-700 transition-colors"
+                  >
+                    {t.logout}
+                  </button>
+                </div>
               </div>
               {user.photo ? (
                 <img src={user.photo} alt={user.name} className="w-9 h-9 rounded-full border border-regal-300 shadow-sm" />

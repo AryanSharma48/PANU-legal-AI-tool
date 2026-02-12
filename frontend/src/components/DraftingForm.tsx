@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { LegalDraftRequest } from '../../types';
+import { LegalDraftRequest, UserProfile } from '../../types';
 import { Language, translations } from '../../translations';
 
 interface DraftingFormProps {
   onSubmit: (data: LegalDraftRequest) => void;
   language: Language;
+  userProfile?: UserProfile | null;
 }
 
 // --- UPDATED INFO TOOLTIP (Larger & Centered) ---
@@ -25,14 +26,22 @@ const InfoTooltip: React.FC<{ text: string }> = ({ text }) => (
   </div>
 );
 
-const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, language }) => {
+const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, language, userProfile }) => {
   const [step, setStep] = useState(1);
   const t = translations[language].drafting;
 
+  // Auto-fill petitioner info from userProfile
   const [formData, setFormData] = useState<Partial<LegalDraftRequest>>({
-    petitioner: { name: '', address: '', age: 0 },
+    petitioner: {
+      name: userProfile?.full_name || '',
+      address: userProfile?.address || '',
+      age: userProfile?.age || 0,
+    },
     respondent: { name: '', address: '' },
-    jurisdiction: { territorial: '', pecuniary: '' },
+    jurisdiction: {
+      territorial: userProfile?.jurisdiction || '',
+      pecuniary: '',
+    },
     causeOfAction: '',
     petitionType: 'Civil'
   });
@@ -90,6 +99,7 @@ const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, language }) => {
                 <input
                   type="text"
                   placeholder="Full Legal Name"
+                  value={formData.petitioner?.name || ''}
                   className="w-full bg-regal-50 border-b border-regal-300 p-3 font-serif italic outline-none focus:border-regal-900"
                   onChange={(e) => updatePetitioner('name', e.target.value)}
                   required
@@ -97,12 +107,14 @@ const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, language }) => {
                 <input
                   type="number"
                   placeholder="Age"
+                  value={formData.petitioner?.age || ''}
                   className="w-full bg-regal-50 border-b border-regal-300 p-3 font-serif italic outline-none focus:border-regal-900"
                   onChange={(e) => updatePetitioner('age', parseInt(e.target.value))}
                   required
                 />
                 <textarea
                   placeholder="Permanent Residential Address"
+                  value={formData.petitioner?.address || ''}
                   className="w-full bg-regal-50 border-b border-regal-300 p-3 font-serif italic outline-none focus:border-regal-900 h-24"
                   onChange={(e) => updatePetitioner('address', e.target.value)}
                   required
@@ -162,6 +174,7 @@ const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, language }) => {
                   <input
                     type="text"
                     placeholder="e.g. District Court, New Delhi"
+                    value={formData.jurisdiction?.territorial || ''}
                     className="w-full bg-regal-50 border-b border-regal-300 p-3 font-serif italic outline-none focus:border-regal-900"
                     onChange={(e) => updateJurisdiction('territorial', e.target.value)}
                     required
