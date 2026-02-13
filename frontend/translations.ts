@@ -40,7 +40,17 @@ export const translations = {
       reviewSub: 'Your details are verified. Our system will now apply the rigorous standards of Indian Law to generate your petition.',
       generateBtn: 'Generate Legal Draft',
       continueBtn: 'Continue',
-      backBtn: 'Back'
+      backBtn: 'Back',
+      // New field labels
+      parentOrSpouseName: 'Parent / Spouse Name',
+      firNumber: 'FIR Number & Year',
+      policeStation: 'Police Station (P.S.)',
+      custodyStatus: 'Status of Accused',
+      judicialCustody: 'Judicial Custody',
+      anticipatoryBail: 'Anticipatory Bail',
+      dateOfCauseOfAction: 'Date of Cause of Action',
+      dateOfMarriage: 'Date of Marriage',
+      caseSpecificHeader: 'Case-Specific Details',
     },
     loading: {
       title: 'Our Solicitors are Drafting...',
@@ -113,7 +123,17 @@ export const translations = {
       reviewSub: 'आपके विवरण सत्यापित हैं। हमारा सिस्टम अब आपकी याचिका तैयार करने के लिए भारतीय कानून के कड़े मानकों को लागू करेगा।',
       generateBtn: 'कानूनी मसौदा तैयार करें',
       continueBtn: 'जारी रखें',
-      backBtn: 'पीछे'
+      backBtn: 'पीछे',
+      // New field labels
+      parentOrSpouseName: 'माता-पिता / पति/पत्नी का नाम',
+      firNumber: 'एफआईआर संख्या और वर्ष',
+      policeStation: 'थाना (पी.एस.)',
+      custodyStatus: 'आरोपी की स्थिति',
+      judicialCustody: 'न्यायिक हिरासत',
+      anticipatoryBail: 'अग्रिम जमानत',
+      dateOfCauseOfAction: 'कार्रवाई के कारण की तिथि',
+      dateOfMarriage: 'विवाह की तिथि',
+      caseSpecificHeader: 'मामले का विशिष्ट विवरण',
     },
     loading: {
       title: 'हमारे वकील मसौदा तैयार कर रहे हैं...',

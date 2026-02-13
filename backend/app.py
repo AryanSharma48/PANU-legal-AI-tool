@@ -41,12 +41,14 @@ class ProfileCreate(BaseModel):
 
 class PetitionerInfo(BaseModel):
     name: str
+    parentOrSpouseName: Optional[str] = ""
     address: str
     age: int
 
 
 class RespondentInfo(BaseModel):
     name: str
+    parentOrSpouseName: Optional[str] = ""
     address: str
 
 
@@ -143,21 +145,58 @@ async def generate_draft(req: DraftRequest):
 
         lang_text = "HINDI (Devnagari script)" if language == "hi" else "ENGLISH"
 
+        # Build petitioner line
+        petitioner_line = f"Petitioner: {data['petitioner']['name']}"
+        if data['petitioner'].get('parentOrSpouseName'):
+            petitioner_line += f", S/o or D/o or W/o: {data['petitioner']['parentOrSpouseName']}"
+        petitioner_line += f", Age: {data['petitioner']['age']}, Resident of: {data['petitioner']['address']}"
+
+        # Build respondent line
+        respondent_line = f"Respondent: {data['respondent']['name']}"
+        if data['respondent'].get('parentOrSpouseName'):
+            respondent_line += f", S/o or D/o or W/o: {data['respondent']['parentOrSpouseName']}"
+        respondent_line += f", Resident of: {data['respondent']['address']}"
+
+        # Build case-specific details
+        case_specific = ""
+        petition_type = data.get('petitionType', 'Civil')
+
+        if petition_type == 'Criminal':
+            if data.get('firNumber'):
+                case_specific += f"\nFIR Number: {data['firNumber']}"
+            if data.get('policeStation'):
+                case_specific += f"\nPolice Station: {data['policeStation']}"
+            if data.get('custodyStatus'):
+                status_text = "Accused is in Judicial Custody" if data['custodyStatus'] == 'judicial_custody' else "Applying for Anticipatory Bail"
+                case_specific += f"\nCustody Status: {status_text}"
+        elif petition_type == 'Civil':
+            if data.get('dateOfCauseOfAction'):
+                case_specific += f"\nDate of Cause of Action: {data['dateOfCauseOfAction']}"
+        elif petition_type == 'Family':
+            if data.get('dateOfMarriage'):
+                case_specific += f"\nDate of Marriage: {data['dateOfMarriage']}"
+
         prompt = f"""
 You are an expert Indian Legal Advocate.
 
 THE ENTIRE PETITION MUST BE WRITTEN IN {lang_text}.
 
-Type: {data.get('petitionType')}
-Petitioner: {data['petitioner']['name']}, Age: {data['petitioner']['age']}, Resident of: {data['petitioner']['address']}
-Respondent: {data['respondent']['name']}, Resident of: {data['respondent']['address']}
+Type: {petition_type}
+{petitioner_line}
+{respondent_line}
 
 Jurisdiction:
 - Territorial: {data['jurisdiction']['territorial']}
 - Pecuniary: {data['jurisdiction']['pecuniary']}
+{case_specific}
 
 Cause of Action:
 {data.get('causeOfAction')}
+
+When provided, include parent/spouse names in the party description as "Son/Daughter/Wife of ___".
+For Criminal cases, reference FIR details and custody status in the petition body.
+For Civil cases, mention the date of cause of action and limitation context.
+For Family cases, mention the date of marriage.
 
 Follow standard Indian court petition format.
 """

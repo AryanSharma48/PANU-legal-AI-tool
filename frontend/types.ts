@@ -6,12 +6,14 @@ export interface Jurisdiction {
 
 export interface PetitionerInfo {
   name: string;
+  parentOrSpouseName?: string;
   address: string;
   age: number;
 }
 
 export interface RespondentInfo {
   name: string;
+  parentOrSpouseName?: string;
   address: string;
 }
 
@@ -20,7 +22,18 @@ export interface LegalDraftRequest {
   respondent: RespondentInfo;
   jurisdiction: Jurisdiction;
   causeOfAction: string;
-  petitionType: 'Civil' | 'Criminal' | 'Writ' | 'Consumer';
+  petitionType: 'Civil' | 'Criminal' | 'Writ' | 'Consumer' | 'Family';
+
+  // Criminal-specific fields
+  firNumber?: string;
+  policeStation?: string;
+  custodyStatus?: 'judicial_custody' | 'anticipatory_bail';
+
+  // Civil-specific fields
+  dateOfCauseOfAction?: string;
+
+  // Family-specific fields
+  dateOfMarriage?: string;
 }
 
 export interface LegalDraftResponse {
