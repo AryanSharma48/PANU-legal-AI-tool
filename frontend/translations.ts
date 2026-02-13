@@ -3,7 +3,7 @@ export type Language = 'en' | 'hi';
 
 export const translations = {
   en: {
-    navbar: { ethos: 'Our Ethos', jurisprudence: 'Jurisprudence', resources: 'Resources', securePortal: 'Drafting Portal', login: 'Login', logout: 'Logout' },
+    navbar: { ethos: 'Our Ethos', jurisprudence: 'Jurisprudence', resources: 'Resources', securePortal: 'Drafting Portal', login: 'Login', logout: 'Logout', createDraft: 'Create Draft', verifyDraft: 'Verify Draft' },
     landing: {
       title: 'Sovereign Justice',
       subtitle: 'for Every Citizen',
@@ -92,7 +92,7 @@ export const translations = {
     }
   },
   hi: {
-    navbar: { ethos: 'हमारा लोकाचार', jurisprudence: 'न्यायशास्त्र', resources: 'संसाधन', securePortal: 'मसौदा पोर्टल', login: 'लॉगिन', logout: 'लॉगआउट' },
+    navbar: { ethos: 'हमारा लोकाचार', jurisprudence: 'न्यायशास्त्र', resources: 'संसाधन', securePortal: 'मसौदा पोर्टल', login: 'लॉगिन', logout: 'लॉगआउट', createDraft: 'याचिका बनाएं', verifyDraft: 'सत्यापित करें' },
     landing: {
       title: 'संप्रभु न्याय',
       subtitle: 'हर नागरिक के लिए',

@@ -12,7 +12,7 @@ import { Language, translations } from '../translations';
 import { auth, googleProvider } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 
-type AppState = 'landing' | 'profile' | 'myprofile' | 'drafting' | 'mydrafts' | 'loading' | 'viewing' | 'ethos' | 'jurisprudence' | 'resources' | 'login';
+type AppState = 'landing' | 'profile' | 'myprofile' | 'drafting' | 'mydrafts' | 'verify' | 'loading' | 'viewing' | 'ethos' | 'jurisprudence' | 'resources' | 'login';
 
 const API_URL = "http://localhost:5000";
 
@@ -214,6 +214,35 @@ const App: React.FC = () => {
     );
   };
 
+  const renderVerify = () => (
+    <div className="max-w-4xl mx-auto py-20 animate-fade-in text-center">
+      <h2 className="text-4xl font-serif text-regal-900 mb-8 border-b-2 border-regal-100 pb-4 uppercase tracking-widest">
+        {language === 'hi' ? 'सत्यापन पोर्टल' : 'Verification Portal'}
+      </h2>
+      <div className="bg-white p-20 old-money-border shadow-xl">
+        <div className="w-24 h-24 bg-regal-50 rounded-full flex items-center justify-center mx-auto mb-8 border border-regal-200">
+          <svg className="w-10 h-10 text-regal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <h3 className="text-2xl font-serif text-regal-800 mb-4 uppercase tracking-wider">
+          {language === 'hi' ? 'शीघ्र आ रहा है' : 'Coming Soon'}
+        </h3>
+        <p className="text-regal-500 italic max-w-md mx-auto leading-relaxed">
+          {language === 'hi'
+            ? 'कानूनी मसौदों का एआई-संचालित सत्यापन अभी विकास के अधीन है। बने रहें।'
+            : 'AI-powered verification of legal drafts is currently under development. Stay tuned for the release of our sovereign validation engine.'}
+        </p>
+        <button
+          onClick={() => setAppState('landing')}
+          className="mt-10 px-8 py-3 border border-regal-300 text-regal-600 hover:text-regal-900 hover:border-regal-900 transition-all uppercase text-xs font-bold tracking-[0.2em]"
+        >
+          {t.drafting.backBtn}
+        </button>
+      </div>
+    </div>
+  );
+
   const renderLogin = () => {
     const l = t.pages.login;
     return (
@@ -362,6 +391,7 @@ const App: React.FC = () => {
         {appState === 'ethos' && renderInfoPage('ethos')}
         {appState === 'jurisprudence' && renderInfoPage('jurisprudence')}
         {appState === 'resources' && renderInfoPage('resources')}
+        {appState === 'verify' && renderVerify()}
         {appState === 'login' && renderLogin()}
 
         {appState === 'loading' && (
