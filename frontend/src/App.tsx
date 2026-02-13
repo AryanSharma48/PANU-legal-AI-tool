@@ -4,6 +4,7 @@ import DraftingForm from './components/DraftingForm';
 import ProfileForm from './components/ProfileForm';
 import PetitionViewer from './components/PetitionViewer';
 import DraftsList from './components/DraftsList';
+import LegalChatbot from './components/LegalChatbot';
 import { generateLegalDraft } from './services/geminiService';
 import { LegalDraftRequest, User, UserProfile, SavedDraft } from '../types';
 import { Language, translations } from '../translations';
@@ -430,6 +431,9 @@ const App: React.FC = () => {
           </p>
         </div>
       </footer>
+
+      {/* Floating AI Legal Chatbot */}
+      <LegalChatbot />
 
       <style>{`
         @keyframes fade-in {

@@ -201,7 +201,7 @@ For Family cases, mention the date of marriage.
 Follow standard Indian court petition format.
 """
 
-        model = genai.GenerativeModel("gemini-1.0-pro")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(prompt)
         draft = response.text
 
@@ -273,6 +273,46 @@ async def get_drafts(user_id: str):
     except Exception as e:
         print(f"❌ Drafts fetch error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- AI CHATBOT ENDPOINT ---
+
+class ChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=4000)
+
+
+@app.post("/api/chat")
+async def chat(req: ChatRequest):
+    """AI Legal Assistant chatbot powered by Gemini 1.5 Flash."""
+    try:
+        if not GEMINI_API_KEY:
+            raise HTTPException(status_code=500, detail="Gemini API key not configured")
+
+        system_prompt = (
+            "You are a professional Indian legal drafting assistant. "
+            "Help users with their questions in an easy to understand language no heavy legal terms and really short like max words are 100. "
+            "Do not fabricate laws. If unsure, say so. "
+            "Be concise and helpful. Format your responses clearly."
+        )
+
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        response = model.generate_content(f"{system_prompt}\n\nUser query: {req.message}")
+
+        # Safely extract text from response
+        ai_text = ""
+        if response and response.text:
+            ai_text = response.text.strip()
+
+        if not ai_text:
+            ai_text = "I'm sorry, I could not generate a response. Please try rephrasing your question."
+
+        return {"reply": ai_text}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Chat error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate response. Please try again.")
 
 
 # --- HEALTH CHECK ---
