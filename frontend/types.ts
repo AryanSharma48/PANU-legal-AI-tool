@@ -58,3 +58,12 @@ export interface UserProfile {
   jurisdiction: string;
   avatar_url: string;
 }
+
+export interface SavedDraft {
+  id: string;
+  user_id: string;
+  petition_type: string;
+  draft_content: string;
+  form_data: any;
+  created_at: string;
+}

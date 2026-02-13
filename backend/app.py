@@ -217,6 +217,64 @@ Follow standard Indian court petition format.
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# --- DRAFTS STORAGE ---
+# 
+# CREATE THIS TABLE IN SUPABASE SQL EDITOR:
+#
+# create table if not exists drafts (
+#   id uuid default gen_random_uuid() primary key,
+#   user_id text not null,
+#   petition_type text not null,
+#   draft_content text not null,
+#   form_data jsonb,
+#   created_at timestamptz default now()
+# );
+#
+# -- Enable RLS (optional)
+# alter table drafts enable row level security;
+#
+
+class DraftSave(BaseModel):
+    user_id: str
+    petition_type: str
+    draft_content: str
+    form_data: Optional[dict] = None
+
+
+@app.post("/api/drafts")
+async def save_draft(draft: DraftSave):
+    """Save a generated draft to the database."""
+    try:
+        data = {
+            "user_id": draft.user_id,
+            "petition_type": draft.petition_type,
+            "draft_content": draft.draft_content,
+            "form_data": draft.form_data or {},
+        }
+        result = supabase.table("drafts").insert(data).execute()
+        return {"msg": "Draft saved", "data": result.data}
+    except Exception as e:
+        print(f"❌ Draft save error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/drafts/{user_id}")
+async def get_drafts(user_id: str):
+    """Get all drafts for a user, newest first."""
+    try:
+        result = (
+            supabase.table("drafts")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        return result.data or []
+    except Exception as e:
+        print(f"❌ Drafts fetch error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # --- HEALTH CHECK ---
 
 @app.get("/api/health")

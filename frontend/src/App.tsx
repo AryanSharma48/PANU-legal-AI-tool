@@ -3,15 +3,16 @@ import Navbar from './components/Navbar';
 import DraftingForm from './components/DraftingForm';
 import ProfileForm from './components/ProfileForm';
 import PetitionViewer from './components/PetitionViewer';
+import DraftsList from './components/DraftsList';
 import { generateLegalDraft } from './services/geminiService';
-import { LegalDraftRequest, User, UserProfile } from '../types';
+import { LegalDraftRequest, User, UserProfile, SavedDraft } from '../types';
 import { Language, translations } from '../translations';
 
 // --- FIREBASE AUTH ---
 import { auth, googleProvider } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 
-type AppState = 'landing' | 'profile' | 'myprofile' | 'drafting' | 'loading' | 'viewing' | 'ethos' | 'jurisprudence' | 'resources' | 'login';
+type AppState = 'landing' | 'profile' | 'myprofile' | 'drafting' | 'mydrafts' | 'loading' | 'viewing' | 'ethos' | 'jurisprudence' | 'resources' | 'login';
 
 const API_URL = "http://localhost:5000";
 
@@ -34,6 +35,8 @@ const App: React.FC = () => {
   const [draft, setDraft] = useState('');
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [savedDrafts, setSavedDrafts] = useState<SavedDraft[]>([]);
+  const [loadingDrafts, setLoadingDrafts] = useState(false);
 
   const t = translations[language];
 
@@ -118,6 +121,29 @@ const App: React.FC = () => {
     }
   };
 
+  const fetchDrafts = async () => {
+    if (!user) return;
+    setLoadingDrafts(true);
+    try {
+      const res = await fetch(`${API_URL}/api/drafts/${user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSavedDrafts(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch drafts:", error);
+    } finally {
+      setLoadingDrafts(false);
+    }
+  };
+
+  // Effect to fetch drafts when navigating to 'mydrafts'
+  useEffect(() => {
+    if (appState === 'mydrafts' && user) {
+      fetchDrafts();
+    }
+  }, [appState, user]);
+
   // Navigate to drafting — allow access even if profile incomplete
   const goToDrafting = () => {
     if (!user) {
@@ -134,12 +160,37 @@ const App: React.FC = () => {
       const result = await generateLegalDraft(data, language);
       console.log("✅ Draft generated:", result.slice(0, 200));
       setDraft(result);
+
+      // Save to backend if user is logged in
+      if (user) {
+        try {
+          await fetch(`${API_URL}/api/drafts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: user.id,
+              petition_type: data.petitionType,
+              draft_content: result,
+              form_data: data
+            })
+          });
+          console.log("💾 Draft saved to database");
+        } catch (saveError) {
+          console.error("⚠️ Failed to save draft to DB:", saveError);
+        }
+      }
+
       setAppState('viewing');
     } catch (error: any) {
       console.error("❌ Drafting failed:", error);
       alert(error?.message || "Unknown drafting error");
       setAppState('drafting');
     }
+  };
+
+  const handleViewDraft = (savedDraft: SavedDraft) => {
+    setDraft(savedDraft.draft_content);
+    setAppState('viewing');
   };
 
   // --- 3. RENDER HELPERS ---
@@ -297,6 +348,15 @@ const App: React.FC = () => {
               } : null)}
             />
           </div>
+        )}
+
+        {appState === 'mydrafts' && user && (
+          <DraftsList
+            drafts={savedDrafts}
+            onViewDraft={handleViewDraft}
+            language={language}
+            loading={loadingDrafts}
+          />
         )}
 
         {appState === 'ethos' && renderInfoPage('ethos')}

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Language, translations } from '../../translations';
 import { User } from '../../types';
 import logo from '../images/logo.png';
@@ -15,6 +15,24 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, onNavigate, user, onLogout }) => {
   const t = translations[language].navbar;
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleDropdownNavigate = (page: string) => {
+    setDropdownOpen(false);
+    onNavigate(page);
+  };
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-heritage-paper/80 backdrop-blur-md border-b border-regal-300">
@@ -44,30 +62,66 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, onNavigate, user
           </div>
 
           {user ? (
-            <div className="flex items-center gap-4 border-l border-regal-200 pl-6 animate-fade-in">
-              <div className="text-right">
-                <p className="text-xs font-bold text-regal-900 tracking-wider uppercase leading-none">{user.name}</p>
-                <div className="flex gap-3 justify-end mt-0.5">
+            <div className="relative border-l border-regal-200 pl-6 animate-fade-in" ref={dropdownRef}>
+              {/* Avatar button — click to toggle dropdown */}
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center gap-3 group cursor-pointer"
+              >
+                <span className="text-xs font-bold text-regal-900 tracking-wider uppercase leading-none hidden lg:block">{user.name}</span>
+                {user.photo ? (
+                  <img src={user.photo} alt={user.name} className="w-9 h-9 rounded-full border border-regal-300 shadow-sm hover:ring-2 hover:ring-regal-400 transition-all" />
+                ) : (
+                  <div className="w-9 h-9 bg-regal-100 rounded-full flex items-center justify-center text-regal-600 font-bold text-sm hover:ring-2 hover:ring-regal-400 transition-all">
+                    {user.name.charAt(0)}
+                  </div>
+                )}
+                <svg className={`w-3 h-3 text-regal-500 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Dropdown menu */}
+              {dropdownOpen && (
+                <div className="absolute right-0 top-full mt-3 w-52 bg-white border border-regal-200 shadow-2xl z-[100] animate-fade-in overflow-hidden">
+                  {/* Profile */}
                   <button
-                    onClick={() => onNavigate('myprofile')}
-                    className="text-[9px] text-regal-500 uppercase font-bold tracking-widest hover:text-regal-900 transition-colors"
+                    onClick={() => handleDropdownNavigate('myprofile')}
+                    className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-regal-50 transition-colors border-b border-regal-100 group"
                   >
-                    {language === 'hi' ? 'प्रोफ़ाइल' : 'Profile'}
+                    <svg className="w-4 h-4 text-regal-400 group-hover:text-regal-900 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span className="text-xs font-bold uppercase tracking-widest text-regal-700 group-hover:text-regal-900">
+                      {language === 'hi' ? 'प्रोफ़ाइल' : 'Profile'}
+                    </span>
                   </button>
-                  <span className="text-regal-300">|</span>
+
+                  {/* My Drafts */}
                   <button
-                    onClick={onLogout}
-                    className="text-[9px] text-regal-500 uppercase font-bold tracking-widest hover:text-red-700 transition-colors"
+                    onClick={() => handleDropdownNavigate('mydrafts')}
+                    className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-regal-50 transition-colors border-b border-regal-100 group"
                   >
-                    {t.logout}
+                    <svg className="w-4 h-4 text-regal-400 group-hover:text-regal-900 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="text-xs font-bold uppercase tracking-widest text-regal-700 group-hover:text-regal-900">
+                      {language === 'hi' ? 'मेरे मसौदे' : 'My Drafts'}
+                    </span>
                   </button>
-                </div>
-              </div>
-              {user.photo ? (
-                <img src={user.photo} alt={user.name} className="w-9 h-9 rounded-full border border-regal-300 shadow-sm" />
-              ) : (
-                <div className="w-9 h-9 bg-regal-100 rounded-full flex items-center justify-center text-regal-600 font-bold text-sm">
-                  {user.name.charAt(0)}
+
+                  {/* Logout */}
+                  <button
+                    onClick={() => { setDropdownOpen(false); onLogout(); }}
+                    className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-red-50 transition-colors group"
+                  >
+                    <svg className="w-4 h-4 text-regal-400 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span className="text-xs font-bold uppercase tracking-widest text-regal-700 group-hover:text-red-600">
+                      {t.logout}
+                    </span>
+                  </button>
                 </div>
               )}
             </div>

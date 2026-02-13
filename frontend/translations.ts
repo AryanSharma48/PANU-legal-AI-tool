@@ -56,6 +56,12 @@ export const translations = {
       title: 'Our Solicitors are Drafting...',
       subtitle: 'Applying Indian Constitutional standards and legal formatting.'
     },
+    mydrafts: {
+      title: 'My Drafts',
+      noDrafts: 'You have no saved drafts yet. Generate your first petition to see it here.',
+      viewDraft: 'View Draft',
+      draftSaved: 'Draft saved successfully!',
+    },
     viewing: {
       watermark: 'PRO BONO',
       downloadBtn: 'Download as PDF',
@@ -138,6 +144,12 @@ export const translations = {
     loading: {
       title: 'हमारे वकील मसौदा तैयार कर रहे हैं...',
       subtitle: 'भारतीय संवैधानिक मानकों और कानूनी प्रारूपों को लागू करना।'
+    },
+    mydrafts: {
+      title: 'मेरे मसौदे',
+      noDrafts: 'आपके पास अभी तक कोई सहेजा हुआ मसौदा नहीं है। अपनी पहली याचिका तैयार करें।',
+      viewDraft: 'मसौदा देखें',
+      draftSaved: 'मसौदा सफलतापूर्वक सहेजा गया!',
     },
     viewing: {
       watermark: 'जनहित',
