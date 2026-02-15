@@ -39,6 +39,7 @@ const App: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [savedDrafts, setSavedDrafts] = useState<SavedDraft[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   const t = translations[language];
 
@@ -89,6 +90,7 @@ const App: React.FC = () => {
   };
 
   const handleGoogleLogin = async () => {
+    setLoadingMessage(language === 'hi' ? 'लॉगिन हो रहा है...' : 'Logging you in...');
     setAppState('loading');
     try {
       await signInWithPopup(auth, googleProvider);
@@ -103,6 +105,7 @@ const App: React.FC = () => {
 
   const handleProfileSave = async (profile: UserProfile, redirectTo: AppState = 'drafting') => {
     try {
+      setLoadingMessage(language === 'hi' ? 'प्रोफ़ाइल अपडेट हो रहा है...' : 'Updating profile...');
       setAppState('loading');
       const res = await fetch(`${API_URL}/api/profile`, {
         method: "POST",
@@ -156,6 +159,7 @@ const App: React.FC = () => {
   };
 
   const handleFormSubmit = async (data: LegalDraftRequest) => {
+    setLoadingMessage(language === 'hi' ? 'समीक्षा और मसौदा तैयार हो रहा है...' : 'Reviewing and generating draft...');
     setAppState('loading');
     try {
       console.log("⏳ Starting draft generation");
@@ -400,12 +404,9 @@ const App: React.FC = () => {
           <div className="fixed inset-0 bg-heritage-paper/95 z-[60] flex flex-col items-center justify-center space-y-8">
             <div className="w-24 h-24 border-4 border-regal-200 border-t-regal-900 rounded-full animate-spin"></div>
             <div className="text-center">
-              <h2 className="text-3xl font-serif text-regal-900 mb-2">{t.loading.title}</h2>
-              <p className="text-regal-500 italic font-serif">{t.loading.subtitle}</p>
+              <h2 className="text-3xl font-serif text-regal-900 mb-2">{loadingMessage}</h2>
             </div>
-            <div className="max-w-xs w-full h-1 bg-regal-100 overflow-hidden mt-8">
-              <div className="w-full h-full bg-regal-900 animate-[loading_2s_ease-in-out_infinite]"></div>
-            </div>
+
           </div>
         )}
 
@@ -419,8 +420,8 @@ const App: React.FC = () => {
       <footer className="mt-24 border-t border-regal-200 py-12 px-6 no-print">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="text-center md:text-left">
-            <p className="font-serif text-xl font-bold text-regal-900">PANU LEGIS</p>
-            <p className="text-sm text-regal-500 uppercase tracking-widest mt-1">Justice Unbound</p>
+            <p className="font-serif text-xl font-bold text-regal-900">PANU</p>
+            <p className="text-sm text-regal-500 uppercase tracking-widest mt-1">Justice Made Accessible</p>
           </div>
           <div className="flex gap-8 text-xs uppercase tracking-[0.2em] font-bold text-regal-400">
             <button onClick={() => setAppState('ethos')} className="hover:text-regal-700">Legal Ethics</button>
@@ -428,7 +429,7 @@ const App: React.FC = () => {
             <a href="#" className="hover:text-regal-700">Data Sovereignty</a>
           </div>
           <p className="text-xs text-regal-400 italic font-serif">
-            &copy; 1924-2025 Panu Sovereign Systems. All rights reserved.
+            &copy; 2026 Panu. All rights reserved.
           </p>
         </div>
       </footer>

@@ -7,7 +7,7 @@ export const translations = {
     landing: {
       title: 'Sovereign Justice',
       subtitle: 'for Every Citizen',
-      description: 'PANU stands for the dignity of the common man. We offer a royal drafting experience for legal petitions—bridging the gap between the court and the marginalized, completely free of the predatory fees of advocates.',
+      description: 'PANU stands for the dignity of the common man. We bridge the gap between the court and the marginalized, completely free of the predatory fees of advocates.',
       beginBtn: 'Begin Your Draft',
       feature1Title: 'I. Access',
       feature1Text: 'Secure Google-authenticated access to ensure procedural integrity.',
@@ -37,7 +37,7 @@ export const translations = {
       causeHeader: 'Statement of Grievance',
       causeOfAction: 'Cause of Action',
       reviewHeader: 'Review & Transcribe',
-      reviewSub: 'Your details are verified. Our system will now apply the rigorous standards of Indian Law to generate your petition.',
+      reviewSub: 'Your details are verified. Our system will now generate your petition.',
       generateBtn: 'Generate Legal Draft',
       continueBtn: 'Continue',
       backBtn: 'Back',
@@ -53,7 +53,7 @@ export const translations = {
       caseSpecificHeader: 'Case-Specific Details',
     },
     loading: {
-      title: 'Our Solicitors are Drafting...',
+      title: 'Drafting...',
       subtitle: 'Applying Indian Constitutional standards and legal formatting.'
     },
     mydrafts: {

@@ -2,10 +2,6 @@ import React, { useState } from 'react';
 import { LegalDraftRequest, UserProfile } from '../../types';
 import { Language, translations } from '../../translations';
 
-// ========== TOGGLE THIS TO SHOW/HIDE THE DEBUG AUTOFILL BUTTON ==========
-const DEBUG_AUTOFILL = true;
-// ========================================================================
-
 const SAMPLE_DATASETS: Partial<LegalDraftRequest>[] = [
   // --- 1. CRIMINAL: Bail Application (Cheating & Fraud) ---
   {
@@ -525,17 +521,6 @@ const DraftingForm: React.FC<DraftingFormProps> = ({ onSubmit, language, userPro
         </div>
       </form>
 
-      {/* ===== DEBUG AUTOFILL BUTTON — set DEBUG_AUTOFILL = false to hide ===== */}
-      {DEBUG_AUTOFILL && (
-        <button
-          type="button"
-          onClick={() => setFormData({ ...SAMPLE_DATASETS[Math.floor(Math.random() * SAMPLE_DATASETS.length)] })}
-          className="fixed bottom-6 right-6 z-[200] px-4 py-2 bg-red-600 text-white text-xs font-mono rounded shadow-lg hover:bg-red-700 transition-all opacity-70 hover:opacity-100"
-          title="Debug: Auto-fill form with sample data"
-        >
-          🧪 Autofill
-        </button>
-      )}
     </div>
   );
 };
