@@ -15,7 +15,8 @@ import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 
 type AppState = 'landing' | 'profile' | 'myprofile' | 'drafting' | 'mydrafts' | 'verify' | 'loading' | 'viewing' | 'ethos' | 'jurisprudence' | 'resources' | 'login';
 
-const API_URL = "http://localhost:5000";
+// API URL is read from Vite env with localhost fallback.
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // --- SUB-COMPONENT FOR INFO BUTTON ---
 const InfoTooltip: React.FC<{ text: string }> = ({ text }) => (

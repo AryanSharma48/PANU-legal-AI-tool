@@ -55,7 +55,8 @@ const BouncingDots: React.FC = () => (
 );
 
 // ─── API Config ──────────────────────────────────────────────────────────────
-const API_URL = 'http://localhost:5000';
+// API URL is read from Vite env with localhost fallback.
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 const LegalChatbot: React.FC = () => {

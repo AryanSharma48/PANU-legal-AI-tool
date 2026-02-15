@@ -1,4 +1,5 @@
 import os
+import json
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request, Depends
@@ -24,6 +25,44 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 print("✅ Supabase URL:", SUPABASE_URL)
 print("✅ Gemini API Key found:", bool(GEMINI_API_KEY))
+
+
+SYSTEM_PROMPT = """
+You are an elite legal counsel and drafting expert practicing in the Indian Judicial System.
+Your exclusive task is to generate highly professional, court-ready legal drafts based on the provided JSON data.
+
+CRITICAL RULES:
+1. NO CONVERSATION OR FILLER: Output ONLY the legal draft. Do not include greetings, explanations, or phrases like "Here is your draft".
+2. NO BRANDING: Do not include any watermarks, app names, or AI branding.
+3. LANGUAGE & TONE: Draft entirely in the requested language using formal, highly professional Indian legal terminology. Convert the user's raw problem explanation into objective, chronological, legal facts.
+4. FORMATTING: Use Markdown. Center-align titles using standard Markdown headers (##). Use bolding (**) for emphasis.
+
+DYNAMIC STRUCTURE BASED ON PETITION TYPE:
+Analyze the JSON data to determine the "type of petition". Adapt the structure accordingly:
+
+- FOR ALL DRAFTS (BASE STRUCTURE):
+    1. COURT HEADING: **IN THE COURT OF [Jurisdiction/Court from JSON]**
+    2. CAUSE TITLE: [Petitioner Name] vs [Respondent Name]
+    3. TITLE OF PETITION: e.g., **APPLICATION UNDER [Relevant Section] FOR [Relief]**
+    4. OPENING: **MOST RESPECTFULLY SHOWETH:**
+    5. PRAYER: Must begin with **PRAYER**. Conclude with: *"AND FOR THIS ACT OF KINDNESS, THE PETITIONER SHALL AS IN DUTY BOUND EVER PRAY."*
+    6. SIGNATURE & VERIFICATION: Standard Indian verification clause at the bottom.
+
+- IF CIVIL SUIT / RECOVERY:
+    - Must include numbered paragraphs specifically titled or detailing: **Cause of Action**, **Jurisdiction**, and **Valuation & Court Fee** (using the 'amount' from JSON).
+
+- IF CRIMINAL BAIL / COMPLAINT:
+    - Prominently feature the FIR Number, Police Station, and Sections (BNS/BNSS or IPC/CrPC) at the top. Focus paragraphs on liberty, presumption of innocence, or exact timeline of the offense.
+
+- IF WRIT PETITION (HIGH COURT/SUPREME COURT):
+    - Must include a **SYNOPSIS & LIST OF DATES** before the Court Heading.
+    - Body must be divided into **FACTS** and **GROUNDS**.
+
+- IF FAMILY/MATRIMONIAL:
+    - Include exact dates of marriage, separation, and statutory grounds for relief.
+
+INSTRUCTIONS: Synthesize the provided JSON data into this exact structure. Leave blank lines (____) for missing specific details so the user can fill them in later.
+"""
 
 
 # --- PYDANTIC MODELS ---
@@ -143,63 +182,16 @@ async def generate_draft(req: DraftRequest):
         if not data:
             raise HTTPException(status_code=400, detail="Missing petition data")
 
-        lang_text = "HINDI (Devnagari script)" if language == "hi" else "ENGLISH"
+        user_prompt = f"""
+Generate the legal draft based on the following:
 
-        # Build petitioner line
-        petitioner_line = f"Petitioner: {data['petitioner']['name']}"
-        if data['petitioner'].get('parentOrSpouseName'):
-            petitioner_line += f", S/o or D/o or W/o: {data['petitioner']['parentOrSpouseName']}"
-        petitioner_line += f", Age: {data['petitioner']['age']}, Resident of: {data['petitioner']['address']}"
+Language Required: {language}
 
-        # Build respondent line
-        respondent_line = f"Respondent: {data['respondent']['name']}"
-        if data['respondent'].get('parentOrSpouseName'):
-            respondent_line += f", S/o or D/o or W/o: {data['respondent']['parentOrSpouseName']}"
-        respondent_line += f", Resident of: {data['respondent']['address']}"
-
-        # Build case-specific details
-        case_specific = ""
-        petition_type = data.get('petitionType', 'Civil')
-
-        if petition_type == 'Criminal':
-            if data.get('firNumber'):
-                case_specific += f"\nFIR Number: {data['firNumber']}"
-            if data.get('policeStation'):
-                case_specific += f"\nPolice Station: {data['policeStation']}"
-            if data.get('custodyStatus'):
-                status_text = "Accused is in Judicial Custody" if data['custodyStatus'] == 'judicial_custody' else "Applying for Anticipatory Bail"
-                case_specific += f"\nCustody Status: {status_text}"
-        elif petition_type == 'Civil':
-            if data.get('dateOfCauseOfAction'):
-                case_specific += f"\nDate of Cause of Action: {data['dateOfCauseOfAction']}"
-        elif petition_type == 'Family':
-            if data.get('dateOfMarriage'):
-                case_specific += f"\nDate of Marriage: {data['dateOfMarriage']}"
-
-        prompt = f"""
-You are an expert Indian Legal Advocate.
-
-THE ENTIRE PETITION MUST BE WRITTEN IN {lang_text}.
-
-Type: {petition_type}
-{petitioner_line}
-{respondent_line}
-
-Jurisdiction:
-- Territorial: {data['jurisdiction']['territorial']}
-- Pecuniary: {data['jurisdiction']['pecuniary']}
-{case_specific}
-
-Cause of Action:
-{data.get('causeOfAction')}
-
-When provided, include parent/spouse names in the party description as "Son/Daughter/Wife of ___".
-For Criminal cases, reference FIR details and custody status in the petition body.
-For Civil cases, mention the date of cause of action and limitation context.
-For Family cases, mention the date of marriage.
-
-Follow standard Indian court petition format.
+Case Details (JSON):
+{json.dumps(data, indent=2)}
 """
+
+        prompt = f"{SYSTEM_PROMPT}\n\n{user_prompt}"
 
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(prompt)
