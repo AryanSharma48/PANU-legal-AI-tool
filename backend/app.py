@@ -107,7 +107,10 @@ app = FastAPI(title="PANU Legal AI API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://panu.onrender.com"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -132,7 +135,7 @@ async def get_current_user(request: Request) -> dict:
 
 # --- PROFILE ROUTES ---
 
-@app.post("/api/profile")
+@app.post("api/profile")
 async def upsert_profile(profile: ProfileCreate):
     """Create or update a user profile after login."""
     try:
@@ -155,7 +158,7 @@ async def upsert_profile(profile: ProfileCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/profile/{user_id}")
+@app.get("api/profile/{user_id}")
 async def get_profile(user_id: str):
     """Get a user's profile by their Supabase auth ID."""
     try:
@@ -172,7 +175,7 @@ async def get_profile(user_id: str):
 
 # --- DRAFT GENERATION ROUTE ---
 
-@app.post("/api/generate-draft")
+@app.post("api/generate-draft")
 async def generate_draft(req: DraftRequest):
     """Generate a legal petition draft using Gemini AI."""
     try:
@@ -233,7 +236,7 @@ class DraftSave(BaseModel):
     form_data: Optional[dict] = None
 
 
-@app.post("/api/drafts")
+@app.post("api/drafts")
 async def save_draft(draft: DraftSave):
     """Save a generated draft to the database."""
     try:
@@ -250,7 +253,7 @@ async def save_draft(draft: DraftSave):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/drafts/{user_id}")
+@app.get("api/drafts/{user_id}")
 async def get_drafts(user_id: str):
     """Get all drafts for a user, newest first."""
     try:
@@ -273,7 +276,7 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=4000)
 
 
-@app.post("/api/chat")
+@app.post("api/chat")
 async def chat(req: ChatRequest):
     """AI Legal Assistant chatbot powered by Gemini 1.5 Flash."""
     try:
@@ -309,7 +312,7 @@ async def chat(req: ChatRequest):
 
 # --- HEALTH CHECK ---
 
-@app.get("/api/health")
+@app.get("api/health")
 async def health():
     return {"status": "ok", "service": "PANU Legal AI"}
 
